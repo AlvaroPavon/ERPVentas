@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0381fe">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="NotasVenta">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="/icons/icon-192.svg">
+  <link rel="icon" type="image/svg+xml" href="/icons/icon-192.svg">
+  <link rel="mask-icon" href="/icons/icon-192.svg" color="#0381fe">
+  <title>Notas de Venta</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="app">
+    <div id="splash-screen">
+      <div class="splash-content">
+        <div class="splash-icon">💰</div>
+        <h1>Notas de Venta</h1>
+        <p>Tu ERP de ventas móvil</p>
+        <div class="splash-loader"></div>
+      </div>
+    </div>
+
+    <div id="auth-container" style="display:none;">
+      <div id="auth-page-content"></div>
+    </div>
+
+    <div id="main-container" style="display:none;">
+      <header id="app-header">
+        <div class="header-left">
+          <button id="menu-btn" class="icon-btn">☰</button>
+        </div>
+        <div class="header-center">
+          <h2 id="page-title">Inicio</h2>
+        </div>
+        <div class="header-right">
+          <button id="dark-toggle" class="icon-btn" title="Modo oscuro">🌙</button>
+          <span id="header-user" class="header-user"></span>
+        </div>
+      </header>
+
+      <main id="main-content">
+        <div id="page-content"></div>
+      </main>
+
+      <nav id="bottom-nav">
+        <button class="nav-item active" data-page="home">
+          <span class="nav-icon">📊</span>
+          <span class="nav-label">Inicio</span>
+        </button>
+        <button class="nav-item" data-page="sales">
+          <span class="nav-icon">➕</span>
+          <span class="nav-label">Vender</span>
+        </button>
+        <button class="nav-item" data-page="sessions">
+          <span class="nav-icon">📋</span>
+          <span class="nav-label">Sesiones</span>
+        </button>
+        <button class="nav-item" data-page="companies">
+          <span class="nav-icon">🏢</span>
+          <span class="nav-label">Empresas</span>
+        </button>
+        <button class="nav-item" data-page="profile">
+          <span class="nav-icon">👤</span>
+          <span class="nav-label">Perfil</span>
+        </button>
+      </nav>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <div id="modal-overlay" style="display:none;">
+    <div id="modal-content"></div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.3/jspdf.plugin.autotable.min.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/router.js"></script>
+  <script src="js/pages/login.js"></script>
+  <script src="js/pages/register.js"></script>
+  <script src="js/pages/home.js"></script>
+  <script src="js/pages/sales.js"></script>
+  <script src="js/pages/sessions.js"></script>
+  <script src="js/pages/companies.js"></script>
+  <script src="js/pages/company-detail.js"></script>
+  <script src="js/pages/profile.js"></script>
+  <script src="js/pages/activity.js"></script>
+  <script src="js/pages/join-requests.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
