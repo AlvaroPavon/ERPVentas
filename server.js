@@ -2,9 +2,13 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
+const http = require('http');
+const { WebSocketServer } = require('ws');
 const { getDb } = require('./database');
 const { authMiddleware } = require('./middleware/auth');
 const { logActivity } = require('./routes/activity');
+const { deductStock } = require('./routes/inventory');
+const { generateToken } = require('./middleware/auth');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -24,9 +28,17 @@ app.use('/api/dashboard', authMiddleware, require('./routes/dashboard'));
 app.use('/api/users', authMiddleware, require('./routes/users'));
 app.use('/api/activity', authMiddleware, require('./routes/activity').router);
 app.use('/api/permissions', authMiddleware, require('./routes/permissions').router);
+// Push VAPID public key (no auth needed)
+app.get('/api/push/vapid-public-key', (req, res) => {
+  res.json({ publicKey: 'BH4Nq5Rf56nzMxdioiEwIfoCh0OqoaTG6PoBVYOVGHggEplcD7LxvHfdXX0CUwRFKg0ugY0-zSk9-6OyB6qoOoQ' });
+});
 app.use('/api/push', authMiddleware, require('./routes/push'));
+app.use('/api/chat', authMiddleware, require('./routes/chat'));
+app.use('/api/commissions', authMiddleware, require('./routes/commissions'));
+app.use('/api/companies/:companyId/inventory', authMiddleware, require('./routes/inventory').router);
 app.use('/api/companies/:companyId/products', authMiddleware, require('./routes/products'));
-// Standalone product delete (uses companyId from the product itself)
+
+// Standalone product delete
 app.delete('/api/products/:productId', authMiddleware, (req, res) => {
   try {
     const db = getDb();
@@ -50,10 +62,8 @@ app.delete('/api/products/:productId', authMiddleware, (req, res) => {
 const DB_PATH = path.join(__dirname, 'ventas.db');
 const BACKUP_DIR = path.join(__dirname, 'backups');
 
-// Ensure backup dir exists
 if (!fs.existsSync(BACKUP_DIR)) fs.mkdirSync(BACKUP_DIR, { recursive: true });
 
-// Auto-backup every 24 hours
 function autoBackup() {
   const now = new Date();
   const filename = `backup_${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}_${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}.db`;
@@ -62,21 +72,16 @@ function autoBackup() {
     const db = getDb();
     db.exec('PRAGMA wal_checkpoint(TRUNCATE)');
     fs.copyFileSync(DB_PATH, dest);
-    // Keep only last 7 backups
     const files = fs.readdirSync(BACKUP_DIR).filter(f => f.startsWith('backup_')).sort().reverse();
-    files.slice(7).forEach(f => {
-      try { fs.unlinkSync(path.join(BACKUP_DIR, f)); } catch(e) {}
-    });
+    files.slice(7).forEach(f => { try { fs.unlinkSync(path.join(BACKUP_DIR, f)); } catch(e) {} });
     console.log(`[Backup] Created: ${filename}`);
   } catch(err) {
     console.error('[Backup] Error:', err.message);
   }
 }
-// Run backup immediately on start, then every 24h
 autoBackup();
 setInterval(autoBackup, 24 * 60 * 60 * 1000);
 
-// Download backup (authenticated users only)
 app.get('/api/backup', authMiddleware, (req, res) => {
   try {
     const db = getDb();
@@ -89,7 +94,6 @@ app.get('/api/backup', authMiddleware, (req, res) => {
   }
 });
 
-// List backups info
 app.get('/api/backup/info', authMiddleware, (req, res) => {
   try {
     const files = fs.readdirSync(BACKUP_DIR)
@@ -105,12 +109,128 @@ app.get('/api/backup/info', authMiddleware, (req, res) => {
   }
 });
 
-// Fallback SPA
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Servidor corriendo en http://localhost:${PORT}`);
-  console.log(`Accede desde tu móvil en la misma red con http://<tu-ip>:${PORT}`);
-});
+// Export for testing
+module.exports = app;
+
+if (require.main === module) {
+  const server = http.createServer(app);
+
+  // WebSocket server
+  const wss = new WebSocketServer({ server, path: '/ws' });
+  global.chatServer = wss;
+
+  wss.on('connection', (ws, req) => {
+    const token = (req.url.split('?token=')[1] || '').split('&')[0];
+    if (!token) { ws.close(4001, 'No token'); return; }
+
+    try {
+      const JWT_SECRET = process.env.JWT_SECRET || 'notas-venta-secret-key-2026';
+      const decoded = require('jsonwebtoken').verify(token, JWT_SECRET);
+      ws.userData = decoded;
+      const convIdsParam = (req.url.split('conversations=')[1] || '').split('&')[0];
+      ws.conversationIds = convIdsParam || '[]';
+
+      broadcastOnline();
+
+      ws.on('message', (raw) => {
+        try {
+          const data = JSON.parse(raw);
+
+          if (data.event === 'subscribe') {
+            ws.conversationIds = JSON.stringify(data.conversationIds || []);
+            return;
+          }
+
+          if (data.event === 'message' && data.conversation_id && data.content) {
+            handleWsMessage(ws, data);
+          }
+
+          if (data.event === 'typing') {
+            wss.clients.forEach(c => {
+              if (c !== ws && c.readyState === 1) {
+                try {
+                  const cIds = JSON.parse(c.conversationIds || '[]');
+                  if (cIds.includes(data.conversation_id)) {
+                    c.send(JSON.stringify({
+                      event: 'typing',
+                      conversation_id: data.conversation_id,
+                      user_id: decoded.id,
+                      user_name: decoded.name
+                    }));
+                  }
+                } catch (e) {}
+              }
+            });
+          }
+        } catch (e) {
+          ws.send(JSON.stringify({ event: 'error', message: 'Invalid message' }));
+        }
+      });
+
+      ws.on('close', () => { broadcastOnline(); });
+      ws.send(JSON.stringify({ event: 'connected', user: decoded }));
+    } catch (e) {
+      ws.close(4001, 'Invalid token');
+    }
+  });
+
+  function handleWsMessage(ws, data) {
+    const db = getDb();
+    const { conversation_id, content, image_url, type } = data;
+    const userId = ws.userData.id;
+
+    const participant = db.prepare(
+      'SELECT id FROM chat_conversations_participants WHERE conversation_id = ? AND user_id = ?'
+    ).get(conversation_id, userId);
+    if (!participant) {
+      ws.send(JSON.stringify({ event: 'error', message: 'No eres participante' }));
+      return;
+    }
+
+    const result = db.prepare(
+      'INSERT INTO chat_messages (conversation_id, user_id, content, type, image_url) VALUES (?, ?, ?, ?, ?)'
+    ).run(conversation_id, userId, content.trim(), type || 'text', image_url || null);
+
+    const message = db.prepare(`
+      SELECT m.*, u.name as user_name, u.avatar as user_avatar
+      FROM chat_messages m JOIN users u ON u.id = m.user_id WHERE m.id = ?
+    `).get(result.lastInsertRowid);
+
+    db.prepare('UPDATE chat_conversations_participants SET last_read_at = CURRENT_TIMESTAMP WHERE conversation_id = ? AND user_id = ?')
+      .run(conversation_id, userId);
+
+    wss.clients.forEach(c => {
+      if (c.readyState === 1) {
+        try {
+          const cIds = JSON.parse(c.conversationIds || '[]');
+          if (cIds.includes(conversation_id)) {
+            c.send(JSON.stringify({ event: 'message', conversation_id, message }));
+          }
+        } catch (e) {}
+      }
+    });
+  }
+
+  function broadcastOnline() {
+    const online = [];
+    wss.clients.forEach(c => {
+      if (c.readyState === 1 && c.userData) {
+        online.push({ id: c.userData.id, name: c.userData.name, avatar: c.userData.avatar });
+      }
+    });
+    wss.clients.forEach(c => {
+      if (c.readyState === 1) {
+        c.send(JSON.stringify({ event: 'users_online', users: online }));
+      }
+    });
+  }
+
+  server.listen(PORT, '0.0.0.0', () => {
+    console.log(`Servidor corriendo en http://localhost:${PORT}`);
+    console.log(`WebSocket en ws://localhost:${PORT}/ws`);
+  });
+}

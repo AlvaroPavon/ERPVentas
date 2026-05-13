@@ -1,3 +1,49 @@
+// Chat WebSocket Manager (inline to avoid extra fetch on first load)
+const chatSocket = {
+  ws: null,
+  onMessage: null,
+  onTyping: null,
+
+  connect(conversationIds) {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const host = window.location.host;
+    const convParam = encodeURIComponent(JSON.stringify(conversationIds || []));
+    try {
+      this.ws = new WebSocket(`${protocol}//${host}/ws?token=${token}&conversations=${convParam}`);
+    } catch(e) { return; }
+
+    this.ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.event === 'message' && this.onMessage) this.onMessage(data);
+        if (data.event === 'typing' && this.onTyping) this.onTyping(data);
+      } catch(e) {}
+    };
+
+    this.ws.onclose = () => {
+      setTimeout(() => this.connect(conversationIds), 3000);
+    };
+
+    this.ws.onerror = () => {};
+  },
+
+  send(event, data) {
+    if (this.ws && this.ws.readyState === 1) {
+      this.ws.send(JSON.stringify({ event, ...data }));
+    }
+  },
+
+  subscribe(conversationIds) {
+    this.send('subscribe', { conversationIds });
+  }
+};
+
+window.chatSocket = chatSocket;
+
+const EMOJI_PICKER = ['👍', '❤️', '😂', '😮', '😢', '🎉', '🔥', '👏', '🤔', '✅'];
+
 const App = {
   user: null,
   initialized: false,
@@ -76,6 +122,25 @@ const App = {
     Router.register('profile', (el) => renderProfile(el));
     Router.register('activity', (el) => renderActivity(el));
     Router.register('join-requests', (el) => renderJoinRequests(el));
+    Router.register('inventory', (el, p) => renderInventory(el, p));
+    Router.register('commissions', (el, p) => renderCommissions(el, p));
+    Router.register('chat', (el) => {
+      if (typeof renderChatPage === 'function') {
+        renderChatPage(el);
+      } else {
+        el.innerHTML = '<div class="list-empty"><p>Cargando chat...</p></div>';
+        import('/js/pages/chat.js').then(() => renderChatPage(el));
+      }
+    });
+
+    // Initialize WebSocket
+    const wsToken = localStorage.getItem('token');
+    if (wsToken) {
+      chatSocket.connect([]);
+      chatSocket.onMessage = () => {
+        updateChatBadge();
+      };
+    }
 
     // Bottom nav
     document.querySelectorAll('.nav-item').forEach(btn => {
@@ -92,11 +157,11 @@ const App = {
     // Menu button
     document.getElementById('menu-btn')?.addEventListener('click', () => {
       const current = Router.currentPage;
-      const pages = ['home', 'sales', 'sessions', 'companies', 'profile'];
+      const pages = ['home', 'sales', 'sessions', 'companies', 'chat', 'profile'];
       const idx = pages.indexOf(current);
       const next = pages[(idx + 1) % pages.length];
       document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
-      document.querySelector(`[data-page="${next}"]`)?.classList.add('active');
+      document.querySelector('[data-page="' + next + '"]')?.classList.add('active');
       location.hash = next;
       Router.go(next, {});
     });
@@ -151,7 +216,7 @@ const App = {
     document.getElementById('header-user').textContent = user.name || '';
     const avatarEl = document.getElementById('header-user');
     if (user.avatar) {
-      avatarEl.innerHTML = `<img src="${user.avatar}" class="header-avatar" alt="">`;
+      avatarEl.innerHTML = '<img src="' + user.avatar + '" class="header-avatar" alt="">';
     } else {
       avatarEl.textContent = user.name || '';
     }
@@ -161,10 +226,11 @@ const App = {
     document.getElementById('page-title').textContent = title;
   },
 
-  showToast(message, type = 'info') {
+  showToast(message, type) {
+    type = type || 'info';
     const container = document.getElementById('toast-container');
     const toast = document.createElement('div');
-    toast.className = `toast ${type}`;
+    toast.className = 'toast ' + type;
     toast.textContent = message;
     container.appendChild(toast);
     setTimeout(() => {
@@ -191,12 +257,18 @@ const App = {
   logout() {
     localStorage.removeItem('token');
     API.setToken(null);
+    chatSocket.ws = null;
     this.user = null;
     document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
     this.showAuth();
     Router.go('login', {});
   },
 };
+
+function updateChatBadge() {
+  // Update unread chat badge
+  console.log('Chat updated');
+}
 
 document.addEventListener('DOMContentLoaded', () => {
   App.init();

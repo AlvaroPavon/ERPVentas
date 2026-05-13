@@ -103,6 +103,94 @@ router.get('/daily-comparison', (req, res) => {
   }
 });
 
+// Resumen de una empresa específica
+router.get('/company/:companyId', (req, res) => {
+  try {
+    const db = getDb();
+    const { companyId } = req.params;
+
+    const membership = db.prepare('SELECT id FROM company_users WHERE company_id = ? AND user_id = ?')
+      .get(companyId, req.user.id);
+    if (!membership) return res.status(403).json({ error: 'No perteneces a esta empresa' });
+
+    // Estadísticas de la empresa
+    const companyStats = db.prepare(`
+      SELECT
+        COUNT(DISTINCT ss.id) as session_count,
+        COUNT(s.id) as total_items,
+        COALESCE(SUM(s.price * s.quantity), 0) as total_amount,
+        COUNT(DISTINCT s.product_name) as unique_products,
+        COUNT(DISTINCT s.user_id) as unique_sellers
+      FROM sales_sessions ss
+      LEFT JOIN sales s ON s.session_id = ss.id
+      WHERE ss.company_id = ?
+    `).get(companyId);
+
+    // Últimas sesiones de la empresa
+    const recentSessions = db.prepare(`
+      SELECT ss.*,
+        COUNT(s.id) as item_count,
+        COALESCE(SUM(s.price * s.quantity), 0) as total_amount
+      FROM sales_sessions ss
+      LEFT JOIN sales s ON s.session_id = ss.id
+      WHERE ss.company_id = ?
+      GROUP BY ss.id
+      ORDER BY ss.session_date DESC
+      LIMIT 10
+    `).all(companyId);
+
+    // Top productos de la empresa
+    const topProducts = db.prepare(`
+      SELECT s.product_name,
+        COUNT(*) as times_sold,
+        SUM(s.quantity) as total_quantity,
+        COALESCE(SUM(s.price * s.quantity), 0) as total_revenue
+      FROM sales s
+      JOIN sales_sessions ss ON ss.id = s.session_id
+      WHERE ss.company_id = ?
+      GROUP BY s.product_name
+      ORDER BY total_revenue DESC
+      LIMIT 5
+    `).all(companyId);
+
+    // Ventas por vendedor en la empresa
+    const bySeller = db.prepare(`
+      SELECT u.name, u.id as user_id,
+        COUNT(s.id) as items,
+        COALESCE(SUM(s.price * s.quantity), 0) as total
+      FROM sales s
+      JOIN users u ON u.id = s.user_id
+      JOIN sales_sessions ss ON ss.id = s.session_id
+      WHERE ss.company_id = ?
+      GROUP BY s.user_id
+      ORDER BY total DESC
+    `).all(companyId);
+
+    // Ticket promedio de la empresa
+    const avgTicket = db.prepare(`
+      SELECT ROUND(AVG(t.total), 2) as avg_ticket
+      FROM (
+        SELECT COALESCE(SUM(s.price * s.quantity), 0) as total
+        FROM sales_sessions ss
+        LEFT JOIN sales s ON s.session_id = ss.id
+        WHERE ss.company_id = ?
+        GROUP BY ss.id
+      ) t
+    `).get(companyId);
+
+    res.json({
+      company_stats: companyStats,
+      recent_sessions: recentSessions,
+      top_products: topProducts,
+      by_seller: bySeller,
+      avg_ticket: avgTicket.avg_ticket || 0
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Error al obtener estadísticas de la empresa' });
+  }
+});
+
 // Resumen global del usuario
 router.get('/overview', (req, res) => {
   try {

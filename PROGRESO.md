@@ -1,10 +1,11 @@
 # PROGRESO DEL PROYECTO - Notas de Venta
 
-## Estado Actual: ✅ COMPLETADO (v1.3.0)
+## Estado Actual: ✅ EN DESARROLLO (v1.5.0)
 
 ## Resumen
 
 Aplicación web ERP para gestión de ventas en mercadillos, instalable como PWA en Android e iOS.
+Con módulo de inventario, sistema de comisiones, dashboard por empresa y exportación de catálogo.
 
 ## Puntos Completados
 
@@ -69,7 +70,7 @@ Aplicación web ERP para gestión de ventas en mercadillos, instalable como PWA 
 
 ### 7. Interfaz de Usuario (One UI 8.5)
 - [x] Diseño mobile-first responsive
-- [x] Navegación inferior con 5 pestañas
+- [x] Navegación inferior con 5 pestañas (+ chat)
 - [x] Cards con bordes redondeados y sombras
 - [x] Splash screen con gradiente
 - [x] Iconos SVG estilo One UI (fondo degradado + símbolo blanco)
@@ -98,67 +99,73 @@ Aplicación web ERP para gestión de ventas en mercadillos, instalable como PWA 
 - [x] GUIA_IA.md - Guía técnica para IA
 - [x] PROGRESO.md - Este archivo de progreso
 
-## Funcionalidades Implementadas (v1.3.0)
+### 11. Módulo de Inventario (v1.4.0)
+- [x] Tabla de stock por empresa
+- [x] Movimientos de inventario
+- [x] Alertas de stock bajo
+- [x] Umbral mínimo configurable
 
-### v1.1.0
-- [x] Modo oscuro (Dark Mode) siguiendo One UI con toggle manual
-- [x] Exportación a CSV con BOM UTF-8 para Excel
-- [x] Exportación a Excel (.xlsx) con estilos (ExcelJS)
-- [x] Galería de imágenes para productos (base64)
-- [x] Logs de actividad con paginación
-- [x] Campo de cantidad ajustable en ventas
-- [x] Botón de cambio rápido de modo oscuro en el header
+### 12. Sistema de Comisiones (v1.4.0)
+- [x] Configuración de porcentajes por rol
+- [x] Resumen de comisiones por vendedor en sesiones cerradas
 
-### v1.2.0
-- [x] **Backup automático BD** cada 24h + descarga manual desde perfil (rotación 7)
-- [x] **Estadísticas avanzadas**: ticket promedio, comparativa semanal, tendencias mensuales 6m, ventas por vendedor
-- [x] **Perfiles de producto**: catálogo por empresa con precio/categoría + autocomplete en ventas
-- [x] **Escáner de código de barras**: BarcodeDetector API nativa del navegador
-- [x] **Roles personalizados**: permisos granulares (8 permisos, 4 roles predefinidos) con editor visual en empresa
-- [x] **Notificaciones push**: suscripción VAPID + Service Worker + test notification
-- [x] **Ver perfil de usuario** desde detalle de empresa (modal con avatar, nombre, email, fechas)
-- [x] **Solicitudes de unión**: página de solicitudes enviadas/recibidas con badges y acciones aceptar/rechazar
+### 13. Dashboard por Empresa (v1.4.0)
+- [x] Estadísticas específicas por empresa
 
-### v1.3.0
-- [x] **Empresas clickables en solicitudes**: navegan al detalle de empresa + usuarios clickables para ver perfil
-- [x] **Modo oscuro automático programado**: activo de 20:00 a 07:00, toggle en Perfil, desactivable manualmente
-- [x] **Edición inline de ventas**: editar nombre, cantidad y precio de productos vendidos con botones ✏️
-- [x] **Notas de sesión visibles**: se muestran en vista activa de venta y en detalle de sesión
-- [x] **Filtro por fecha en sesiones**: selector de rango de fechas + búsqueda por nombre
-- [x] **Eliminar sesión**: endpoint DELETE + botón 🗑️ en detalle (con protección por permisos)
-- [x] **Contador de sesiones** en el título del listado
-- [x] **Editar sesión**: modal con nombre, fecha y notas desde detalle de sesión
-- [x] **Múltiples precios por producto**: variantes de precio por cantidad (unidad, pack, mayor) con selector en ventas
-- [x] **Widgets personalizables en dashboard**: toggle para cada sección (stats, gráficas, avanzadas) desde ⚙️ Personalizar
+### 14. Exportar Catálogo (v1.4.0)
+- [x] Descarga en CSV y Excel (.xlsx)
+
+## Funcionalidades Implementadas en esta sesión
+
+### 15. 🧪 Tests Automáticos (109 tests)
+- [x] Jest + Supertest configurados
+- [x] 12 suites de tests en `tests/`
+- [x] Tests de integración para todas las rutas API
+- [x] BD en memoria para tests (TEST_DB=true)
+- [x] Red de seguridad para todo el proyecto
+
+### 16. 💬 Chat Interno (WebSocket)
+- [x] Tablas chat_conversations, chat_conversations_participants, chat_messages
+- [x] Router REST `/api/chat/*` (conversaciones, mensajes, participantes, reacciones)
+- [x] Servidor WebSocket en `/ws` con autenticación JWT
+- [x] Cliente WebSocket con reconexión automática
+- [x] Página de chat con sidebar, mensajes en tiempo real
+- [x] Reacciones con emojis (👍❤️😂😮😢🎉🔥👏🤔✅)
+- [x] Indicador de "está escribiendo..."
+- [x] Estado online/offline de usuarios
+- [x] Modales para nueva conversación, miembros, en línea
+- [x] Badge de no leídos en navegación
+- [x] Auto-creación de canal "general" por empresa
+- [x] Estilos adaptados a One UI 8.5
 
 ## Funcionalidades Pendientes (Futuras)
 
 ### Próximas
-- [ ] **Chat interno**: Sistema de mensajería en tiempo real entre miembros de empresa (WebSocket)
-- [ ] **Modo offline completo**: Cachear datos de API con IndexedDB para operar sin conexión y sincronizar después
-- [x] **Múltiples precios por producto**: Precio por unidad, por pack, por mayor con selector en ventas
+- [ ] **Resumen diario por email** — envío automático de resumen al owner/admin
+- [ ] **Categorías/etiquetas en productos** — agrupar y filtrar
+- [ ] **Exportar dashboard como PDF/imagen** — compartir gráficas
+- [ ] **Comparativa vs periodo anterior** en dashboard
+- [ ] **Modo offline completo** — IndexedDB + sincronización
 
 ### Largo Plazo
-- [ ] **Módulo de inventario**: Control de stock, alertas de reposición, histórico de precios
-- [ ] **Gateway de pago**: Integrar pasarela como Stripe para cobros con TPV virtual
-- [ ] **Tests automatizados**: Tests unitarios y de integración (backend) + tests E2E (frontend)
-- [ ] **CI/CD pipeline**: GitHub Actions para lint, test y deploy automático
-- [ ] **API pública**: Endpoints documentados para integración con otras herramientas
-- [ ] **Panel multi-idioma**: Soporte para español/inglés/catalán/euskera/gallego
-- [x] **Widgets personalizables en dashboard**: Elegir qué gráficas y estadísticas mostrar con botón ⚙️ Personalizar
-- [ ] **Facturación electrónica**: Generar facturas oficiales con desglose de IVA y números de factura
-- [ ] **Firma digital**: Firma de sesiones y cierres con PIN o biometría
-- [ ] **Vista administrador**: Panel global para gestionar múltiples empresas desde una sola cuenta
-- [ ] **Sistema de comisiones**: Calcular comisiones por vendedor con porcentajes configurables
-- [x] **Editar sesión**: Poder cambiar nombre, fecha y notas de una sesión existente desde el detalle
+- [ ] **Gateway de pago** — Stripe para cobros con TPV virtual
+- [ ] **Facturación electrónica** — facturas con IVA
+- [ ] **Modo offline completo** — Cachear datos con IndexedDB
+- [ ] **Firma digital** — firma de sesiones con PIN o biometría
+- [ ] **Tests E2E frontend** — Playwright
+- [ ] **CI/CD pipeline** — GitHub Actions
+- [ ] **API pública documentada** — Swagger
+- [ ] **Panel multi-idioma** — es/en/ca/eu/gl
+- [ ] **Vista administrador** — panel global multi-empresa
 
 ## Notas del Diseño
 
 El diseño sigue fielmente los principios de Samsung One UI 8.5:
 - **Web de Samsung**: https://developer.samsung.com/one-ui/index.html
-- **Colores**: Azul One UI (#0381fe) como color principal
+- **Colores**: Azul Samsung (#0381fe) como color principal
 - **Iconos**: Fondo cuadrado con radius 40px (en 192x192), degradado azul, símbolo blanco
-- **Tipografía**: Sistema nativa del dispositivo
-- **Navegación**: Bottom navigation con máximo 5 tabs
+- **Tipografía**: Sistema nativa para máxima legibilidad
+- **Navegación**: Bottom navigation con máximo 6 tabs (incluyendo chat)
 - **Botones**: Contained (contenidos) con border-radius 18dp
 - **Cards**: Esquinas redondeadas (12-20px), sombras tipo One UI
+- **Vista en escritorio**: max-width 600px centrado

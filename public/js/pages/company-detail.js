@@ -112,13 +112,41 @@ async function renderCompanyDetail(el, params) {
       }
     }
 
-    // Products section
-    html += '<div class="section-title">Catálogo de Productos</div>';
-    html += `<div id="products-section">
-      <div style="text-align:center;padding:12px;"><div class="spinner"></div></div>
-    </div>`;
+// Products section
+     html += '<div class="section-title">Catálogo de Productos</div>';
+     html += `<div id="products-section">
+       <div style="text-align:center;padding:12px;"><div class="spinner"></div></div>
+     </div>`;
 
-    // Pending requests section (owner/admin only)
+     // Inventory section (quick link)
+     html += `
+       <div class="section-title" style="margin-top:12px;">📦 Inventario</div>
+       <div class="list-item" style="cursor:pointer;" id="btn-go-inventory">
+         <div class="item-icon">📦</div>
+         <div class="item-content">
+           <div class="item-title">Ver inventario completo</div>
+           <div class="item-subtitle">Stock, movimientos y alertas</div>
+         </div>
+         <div class="item-right"><span style="font-size:18px;">›</span></div>
+       </div>
+     `;
+
+     // Commissions section (owner/admin)
+     if (isAdmin) {
+       html += `
+         <div class="section-title" style="margin-top:12px;">💰 Comisiones</div>
+         <div class="list-item" style="cursor:pointer;" id="btn-go-commissions">
+           <div class="item-icon">💰</div>
+           <div class="item-content">
+             <div class="item-title">Configurar comisiones</div>
+             <div class="item-subtitle">Porcentaje por rol y resumen</div>
+           </div>
+           <div class="item-right"><span style="font-size:18px;">›</span></div>
+         </div>
+       `;
+     }
+
+     // Pending requests section (owner/admin only)
     if (isAdmin && company.joinRequest !== undefined) {
       html += `<div id="pending-requests-section" style="display:none;">
         <div class="section-title">Solicitudes Pendientes</div>
@@ -295,35 +323,47 @@ async function renderCompanyDetail(el, params) {
       });
     });
 
-    // User profile clicks
-    el.querySelectorAll('[data-user-id]').forEach(item => {
-      item.addEventListener('click', async () => {
-        const userId = item.dataset.userId;
-        try {
-          const user = await API.getPublicUser(userId);
-          const avatarHtml = user.avatar
-            ? `<img src="${user.avatar}" style="width:64px;height:64px;border-radius:50%;object-fit:cover;border:3px solid var(--primary);">`
-            : `<div style="width:64px;height:64px;border-radius:50%;background:var(--primary-gradient);color:white;display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto;">👤</div>`;
-          const joined = company.users.find(u => u.id === user.id)?.joined_at || '';
-          const joinedDate = joined ? new Date(joined).toLocaleDateString('es') : '';
-          App.showModal(`
-            <div class="modal-header">
-              <h3>Perfil de Usuario</h3>
-              <button class="modal-close" onclick="App.hideModal()">✕</button>
-            </div>
-            <div style="text-align:center;padding:16px 0;">
-              ${avatarHtml}
-              <h3 style="margin-top:12px;font-size:18px;">${user.name}</h3>
-              <p style="color:var(--text-secondary);font-size:13px;">${user.email}</p>
-              ${joinedDate ? `<p style="color:var(--text-tertiary);font-size:12px;margin-top:4px;">Miembro desde ${joinedDate}</p>` : ''}
-              <p style="color:var(--text-tertiary);font-size:11px;margin-top:8px;">Usuario desde ${new Date(user.created_at).toLocaleDateString('es')}</p>
-            </div>
-          `);
-        } catch (err) {
-          App.showToast('Error al cargar perfil', 'error');
-        }
-      });
-    });
+// User profile clicks
+     el.querySelectorAll('[data-user-id]').forEach(item => {
+       item.addEventListener('click', async () => {
+         const userId = item.dataset.userId;
+         try {
+           const user = await API.getPublicUser(userId);
+           const avatarHtml = user.avatar
+             ? `<img src="${user.avatar}" style="width:64px;height:64px;border-radius:50%;object-fit:cover;border:3px solid var(--primary);">`
+             : `<div style="width:64px;height:64px;border-radius:50%;background:var(--primary-gradient);color:white;display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto;">👤</div>`;
+           const joined = company.users.find(u => u.id === user.id)?.joined_at || '';
+           const joinedDate = joined ? new Date(joined).toLocaleDateString('es') : '';
+           App.showModal(`
+             <div class="modal-header">
+               <h3>Perfil de Usuario</h3>
+               <button class="modal-close" onclick="App.hideModal()">✕</button>
+             </div>
+             <div style="text-align:center;padding:16px 0;">
+               ${avatarHtml}
+               <h3 style="margin-top:12px;font-size:18px;">${user.name}</h3>
+               <p style="color:var(--text-secondary);font-size:13px;">${user.email}</p>
+               ${joinedDate ? `<p style="color:var(--text-tertiary);font-size:12px;margin-top:4px;">Miembro desde ${joinedDate}</p>` : ''}
+               <p style="color:var(--text-tertiary);font-size:11px;margin-top:8px;">Usuario desde ${new Date(user.created_at).toLocaleDateString('es')}</p>
+             </div>
+           `);
+         } catch (err) {
+           App.showToast('Error al cargar perfil', 'error');
+         }
+       });
+     });
+
+     // Go to inventory
+     document.getElementById('btn-go-inventory')?.addEventListener('click', () => {
+       location.hash = `inventory/${companyId}`;
+       Router.go('inventory', { id: companyId });
+     });
+
+     // Go to commissions
+     document.getElementById('btn-go-commissions')?.addEventListener('click', () => {
+       location.hash = `commissions/${companyId}`;
+       Router.go('commissions', { id: companyId });
+     });
 
   } catch (err) {
     el.innerHTML = `<div class="list-empty"><div class="empty-icon">⚠️</div><p>Error: ${err.message}</p></div>`;
@@ -443,15 +483,19 @@ async function loadRoleManagement(companyId) {
 
   try {
     const data = await API.getCompanyPermissions(companyId);
-    const availablePerms = ['manage_members','manage_products','manage_sessions','add_sales','delete_sales','view_reports'];
-    const permLabels = {
-      manage_members: 'Gestionar miembros',
-      manage_products: 'Gestionar productos',
-      manage_sessions: 'Gestionar sesiones',
-      add_sales: 'Añadir ventas',
-      delete_sales: 'Eliminar ventas',
-      view_reports: 'Ver informes',
-    };
+const availablePerms = ['manage_members','manage_products','manage_sessions','manage_inventory',
+       'add_sales','delete_sales','view_reports','view_commissions','export_catalog'];
+     const permLabels = {
+       manage_members: 'Gestionar miembros',
+       manage_products: 'Gestionar productos',
+       manage_sessions: 'Gestionar sesiones',
+       manage_inventory: 'Gestionar inventario',
+       add_sales: 'Añadir ventas',
+       delete_sales: 'Eliminar ventas',
+       view_reports: 'Ver informes',
+       view_commissions: 'Ver comisiones',
+       export_catalog: 'Exportar catálogo',
+     };
 
     let html = '';
     data.allRoles.filter(r => r !== 'owner').forEach(role => {

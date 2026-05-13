@@ -7,12 +7,21 @@ let db;
 
 function getDb() {
   if (!db) {
-    db = new Database(DB_PATH);
+    const dbPath = process.env.TEST_DB === 'true' ? ':memory:' : DB_PATH;
+    db = new Database(dbPath);
     db.pragma('journal_mode = WAL');
     db.pragma('foreign_keys = ON');
     initSchema();
   }
   return db;
+}
+
+function resetDb() {
+  if (db) {
+    db.close();
+    db = undefined;
+  }
+  return getDb();
 }
 
 function initSchema() {
@@ -61,7 +70,6 @@ function initSchema() {
       product_name TEXT NOT NULL,
       price REAL NOT NULL,
       quantity INTEGER DEFAULT 1,
-      image_url TEXT DEFAULT NULL,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
 
@@ -69,6 +77,7 @@ function initSchema() {
     CREATE INDEX IF NOT EXISTS idx_sales_user ON sales(user_id);
     CREATE INDEX IF NOT EXISTS idx_sales_sessions_company ON sales_sessions(company_id);
     CREATE INDEX IF NOT EXISTS idx_sales_sessions_date ON sales_sessions(session_date);
+
     CREATE TABLE IF NOT EXISTS join_requests (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       company_id INTEGER REFERENCES companies(id) ON DELETE CASCADE,
@@ -78,14 +87,9 @@ function initSchema() {
       UNIQUE(company_id, user_id)
     );
 
-    CREATE INDEX IF NOT EXISTS idx_company_users_company ON company_users(company_id);
-    CREATE INDEX IF NOT EXISTS idx_company_users_user ON company_users(user_id);
     CREATE INDEX IF NOT EXISTS idx_join_requests_company ON join_requests(company_id);
     CREATE INDEX IF NOT EXISTS idx_join_requests_user ON join_requests(user_id);
-  `);
 
-  // Push subscriptions
-  db.exec(`
     CREATE TABLE IF NOT EXISTS push_subscriptions (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
@@ -95,10 +99,7 @@ function initSchema() {
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       UNIQUE(endpoint)
     );
-  `);
 
-  // Roles & Permissions
-  db.exec(`
     CREATE TABLE IF NOT EXISTS role_permissions (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       company_id INTEGER REFERENCES companies(id) ON DELETE CASCADE,
@@ -107,25 +108,7 @@ function initSchema() {
       UNIQUE(company_id, role, permission)
     );
     CREATE INDEX IF NOT EXISTS idx_role_perms_company ON role_permissions(company_id);
-  `);
 
-  // Seed default role permissions for existing companies
-  const companies = db.prepare('SELECT id FROM companies').all();
-  const defaultPerms = {
-    owner: ['manage_company','manage_members','manage_roles','manage_products','manage_sessions','add_sales','delete_sales','view_reports'],
-    admin: ['manage_members','manage_products','manage_sessions','add_sales','delete_sales','view_reports'],
-    member: ['add_sales','view_reports'],
-    cashier: ['add_sales'],
-  };
-  const insertPerm = db.prepare('INSERT OR IGNORE INTO role_permissions (company_id, role, permission) VALUES (?, ?, ?)');
-  companies.forEach(c => {
-    Object.entries(defaultPerms).forEach(([role, perms]) => {
-      perms.forEach(p => insertPerm.run(c.id, role, p));
-    });
-  });
-
-  // Products table
-  db.exec(`
     CREATE TABLE IF NOT EXISTS products (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       company_id INTEGER REFERENCES companies(id) ON DELETE CASCADE,
@@ -137,10 +120,7 @@ function initSchema() {
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
     CREATE INDEX IF NOT EXISTS idx_products_company ON products(company_id);
-  `);
 
-  // Activity logs table
-  db.exec(`
     CREATE TABLE IF NOT EXISTS activity_logs (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER REFERENCES users(id),
@@ -153,13 +133,88 @@ function initSchema() {
     CREATE INDEX IF NOT EXISTS idx_activity_user ON activity_logs(user_id);
     CREATE INDEX IF NOT EXISTS idx_activity_company ON activity_logs(company_id);
     CREATE INDEX IF NOT EXISTS idx_activity_created ON activity_logs(created_at);
+
+    CREATE TABLE IF NOT EXISTS inventory (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      company_id INTEGER REFERENCES companies(id) ON DELETE CASCADE,
+      product_id INTEGER REFERENCES products(id) ON DELETE CASCADE,
+      stock INTEGER NOT NULL DEFAULT 0,
+      min_stock INTEGER DEFAULT 0,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(company_id, product_id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_inventory_company ON inventory(company_id);
+    CREATE INDEX IF NOT EXISTS idx_inventory_product ON inventory(product_id);
+
+    CREATE TABLE IF NOT EXISTS inventory_movements (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      inventory_id INTEGER REFERENCES inventory(id) ON DELETE CASCADE,
+      type TEXT NOT NULL,
+      quantity INTEGER NOT NULL,
+      notes TEXT DEFAULT '',
+      created_by INTEGER REFERENCES users(id),
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_inv_movements_inv ON inventory_movements(inventory_id);
+    CREATE INDEX IF NOT EXISTS idx_inv_movements_date ON inventory_movements(created_at);
+
+    CREATE TABLE IF NOT EXISTS commission_config (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      company_id INTEGER REFERENCES companies(id) ON DELETE CASCADE,
+      role TEXT NOT NULL,
+      commission_pct REAL NOT NULL DEFAULT 0,
+      UNIQUE(company_id, role)
+    );
   `);
 
   // Migrate: add image_url column if missing
   try { db.exec('ALTER TABLE sales ADD COLUMN image_url TEXT DEFAULT NULL'); } catch (e) {}
-
   // Migrate: add prices JSON column to products
   try { db.exec('ALTER TABLE products ADD COLUMN prices TEXT DEFAULT NULL'); } catch (e) {}
+  // Migrate: add invoice_number column to sales_sessions
+  try { db.exec('ALTER TABLE sales_sessions ADD COLUMN invoice_number TEXT DEFAULT NULL'); } catch (e) {}
+  // Migrate: add stock column to products
+  try { db.exec('ALTER TABLE products ADD COLUMN stock INTEGER DEFAULT 0'); } catch (e) {}
+  // Migrate: add profit column to sales
+  try { db.exec('ALTER TABLE sales ADD COLUMN profit REAL DEFAULT 0'); } catch (e) {}
+
+  // Chat tables
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS chat_conversations (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      company_id INTEGER REFERENCES companies(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      type TEXT NOT NULL DEFAULT 'channel',
+      created_by INTEGER REFERENCES users(id),
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_chat_conv_company ON chat_conversations(company_id);
+
+    CREATE TABLE IF NOT EXISTS chat_conversations_participants (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      conversation_id INTEGER REFERENCES chat_conversations(id) ON DELETE CASCADE,
+      user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+      joined_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      last_read_at DATETIME,
+      UNIQUE(conversation_id, user_id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_chat_part_conv ON chat_conversations_participants(conversation_id);
+    CREATE INDEX IF NOT EXISTS idx_chat_part_user ON chat_conversations_participants(user_id);
+
+    CREATE TABLE IF NOT EXISTS chat_messages (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      conversation_id INTEGER REFERENCES chat_conversations(id) ON DELETE CASCADE,
+      user_id INTEGER REFERENCES users(id),
+      content TEXT NOT NULL,
+      type TEXT NOT NULL DEFAULT 'text',
+      image_url TEXT DEFAULT NULL,
+      emoji_reactions TEXT DEFAULT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_chat_msgs_conv ON chat_messages(conversation_id);
+    CREATE INDEX IF NOT EXISTS idx_chat_msgs_user ON chat_messages(user_id);
+    CREATE INDEX IF NOT EXISTS idx_chat_msgs_created ON chat_messages(created_at);
+  `);
 
   // Migrate existing admin creators to owner role
   db.exec(`
@@ -168,6 +223,59 @@ function initSchema() {
     WHERE role = 'admin'
     AND user_id = (SELECT created_by FROM companies WHERE companies.id = company_users.company_id)
   `);
+
+  // Auto-create general channel for each company
+  db.prepare(`
+    INSERT OR IGNORE INTO chat_conversations (company_id, name, type, created_by)
+    SELECT id, 'general', 'company', created_by FROM companies
+    WHERE id NOT IN (SELECT company_id FROM chat_conversations WHERE type = 'company')
+  `).run();
+
+  // Auto-add all company members to general channel
+  const generalConvs = db.prepare(`
+    SELECT cc.id as conv_id FROM chat_conversations cc
+    WHERE cc.type = 'company' AND cc.name = 'general'
+  `).all();
+
+  const insertParticipant = db.prepare(
+    'INSERT OR IGNORE INTO chat_conversations_participants (conversation_id, user_id) VALUES (?, ?)'
+  );
+
+  generalConvs.forEach(conv => {
+    const companyId = db.prepare('SELECT company_id FROM chat_conversations WHERE id = ?').get(conv.conv_id).company_id;
+    const members = db.prepare('SELECT user_id FROM company_users WHERE company_id = ?').all(companyId);
+    members.forEach(m => insertParticipant.run(conv.conv_id, m.user_id));
+  });
+
+  // Seed default role permissions for existing companies
+  const companies = db.prepare('SELECT id FROM companies').all();
+  const defaultPerms = {
+    owner: ['manage_company','manage_members','manage_roles','manage_products','manage_sessions','add_sales','delete_sales','view_reports','manage_inventory','view_commissions','export_catalog'],
+    admin: ['manage_members','manage_products','manage_sessions','add_sales','delete_sales','view_reports','manage_inventory','view_commissions','export_catalog'],
+    member: ['add_sales','view_reports'],
+    cashier: ['add_sales'],
+  };
+  const insertPerm = db.prepare('INSERT OR IGNORE INTO role_permissions (company_id, role, permission) VALUES (?, ?, ?)');
+  companies.forEach(c => {
+    Object.entries(defaultPerms).forEach(([role, perms]) => {
+      perms.forEach(p => insertPerm.run(c.id, role, p));
+    });
+  });
+
+  // Seed default commission configs for existing companies
+  const companies2 = db.prepare('SELECT id FROM companies').all();
+  const defaultCommissions = {
+    owner: 0,
+    admin: 0,
+    member: 5,
+    cashier: 3,
+  };
+  const insertComm = db.prepare('INSERT OR IGNORE INTO commission_config (company_id, role, commission_pct) VALUES (?, ?, ?)');
+  companies2.forEach(c => {
+    Object.entries(defaultCommissions).forEach(([role, pct]) => {
+      insertComm.run(c.id, role, pct);
+    });
+  });
 }
 
-module.exports = { getDb };
+module.exports = { getDb, resetDb };

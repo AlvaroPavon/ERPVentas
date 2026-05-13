@@ -92,6 +92,17 @@ const API = {
   pushStatus() { return this.get('/api/push/status'); },
   pushTest() { return this.post('/api/push/test'); },
 
+  // Chat
+  getChatConversations() { return this.get('/api/chat/conversations'); },
+  createChatConversation(name, type, company_id) { return this.post('/api/chat/conversations', { name, type, company_id }); },
+  getChatMessages(conversationId, page, limit) { return this.get(`/api/chat/conversations/${conversationId}/messages?page=${page || 1}&limit=${limit || 50}`); },
+  sendChatMessage(conversationId, content, image_url, type) { return this.post(`/api/chat/conversations/${conversationId}/messages`, { content, image_url, type }); },
+  addChatParticipant(conversationId, user_id) { return this.post(`/api/chat/conversations/${conversationId}/participants`, { user_id }); },
+  removeChatParticipant(participantId) { return this.del(`/api/chat/participants/${participantId}`); },
+  addChatReaction(messageId, emoji) { return this.post(`/api/chat/messages/${messageId}/reaction`, { emoji }); },
+  getChatParticipants(conversationId) { return this.get(`/api/chat/conversations/${conversationId}/participants`); },
+  getChatOnline(conversationId) { return this.get(`/api/chat/conversations/${conversationId}/online`); },
+
   // Export helpers
   downloadBlob(url, filename) {
     const token = this.token;
@@ -122,10 +133,33 @@ const API = {
     return this.downloadBlob(`/api/sales/session/${sessionId}/xlsx`, 'export.xlsx');
   },
 
+  downloadCatalogCSV(companyId) {
+    return this.downloadBlob(`/api/companies/${companyId}/export/csv`, 'catalogo.csv');
+  },
+
+  downloadCatalogXLSX(companyId) {
+    return this.downloadBlob(`/api/companies/${companyId}/export/xlsx`, 'catalogo.xlsx');
+  },
+
   downloadBackup() {
     return this.downloadBlob('/api/backup', `backup_${new Date().toISOString().slice(0,10)}.db`);
   },
   getBackupInfo() { return this.get('/api/backup/info'); },
+
+  // Company dashboard
+  getCompanyDashboard(companyId) { return this.get(`/api/dashboard/company/${companyId}`); },
+
+  // Inventory
+  getInventory(companyId) { return this.get(`/api/companies/${companyId}/inventory`); },
+  getInventoryMovements(companyId) { return this.get(`/api/companies/${companyId}/inventory/movements`); },
+  addStock(companyId, productId, quantity, notes) { return this.post(`/api/companies/${companyId}/inventory/${productId}/add-stock`, { quantity, notes }); },
+  removeStock(companyId, productId, quantity, notes) { return this.post(`/api/companies/${companyId}/inventory/${productId}/remove-stock`, { quantity, notes }); },
+  updateStockThreshold(companyId, productId, minStock) { return this.put(`/api/companies/${companyId}/inventory/${productId}/threshold`, { minStock }); },
+
+  // Commissions
+  getCommissionConfig(companyId) { return this.get(`/api/commissions/config/${companyId}`); },
+  updateCommissionConfig(companyId, role, pct) { return this.put(`/api/commissions/config/${companyId}/${role}`, { commission_pct: pct }); },
+  getCommissionSummary(companyId) { return this.get(`/api/commissions/summary/${companyId}`); },
 
   // User
   getProfile() { return this.get('/api/users/profile'); },

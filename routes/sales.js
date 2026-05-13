@@ -1,6 +1,7 @@
 const express = require('express');
 const { getDb } = require('../database');
 const { logActivity } = require('./activity');
+const { deductStock } = require('./inventory');
 
 const router = express.Router();
 
@@ -49,35 +50,43 @@ router.get('/sessions/:companyId', (req, res) => {
 
 // Crear sesión de venta
 router.post('/sessions', (req, res) => {
-  try {
-    const { company_id, name, session_date, notes } = req.body;
-    if (!company_id || !name || !session_date) {
-      return res.status(400).json({ error: 'Faltan datos requeridos' });
-    }
+   try {
+     const { company_id, name, session_date, notes } = req.body;
+     if (!company_id || !name || !session_date) {
+       return res.status(400).json({ error: 'Faltan datos requeridos' });
+     }
 
-    const db = getDb();
-    const membership = db.prepare('SELECT id FROM company_users WHERE company_id = ? AND user_id = ?')
-      .get(company_id, req.user.id);
-    if (!membership) return res.status(403).json({ error: 'No perteneces a esta empresa' });
+     const db = getDb();
+     const membership = db.prepare('SELECT id FROM company_users WHERE company_id = ? AND user_id = ?')
+       .get(company_id, req.user.id);
+     if (!membership) return res.status(403).json({ error: 'No perteneces a esta empresa' });
 
-    const result = db.prepare(
-      'INSERT INTO sales_sessions (company_id, created_by, name, session_date, notes) VALUES (?, ?, ?, ?, ?)'
-    ).run(company_id, req.user.id, name, session_date, notes || '');
+     // Prevención de sesiones duplicadas (mismo nombre + fecha + empresa)
+     const existing = db.prepare(
+       'SELECT id FROM sales_sessions WHERE company_id = ? AND name = ? AND session_date = ?'
+     ).get(company_id, name.trim(), session_date);
+     if (existing) {
+       return res.status(409).json({ error: 'Ya existe una sesión con ese nombre en esta fecha' });
+     }
 
-    const session = db.prepare(`
-      SELECT ss.*, u.name as created_by_name
-      FROM sales_sessions ss
-      JOIN users u ON u.id = ss.created_by
-      WHERE ss.id = ?
-    `).get(result.lastInsertRowid);
+     const result = db.prepare(
+       'INSERT INTO sales_sessions (company_id, created_by, name, session_date, notes) VALUES (?, ?, ?, ?, ?)'
+     ).run(company_id, req.user.id, name.trim(), session_date, notes || '');
 
-    logActivity(req.user.id, 'create_session', `Creó la sesión "${name}"`, company_id, session.id);
-    res.status(201).json(session);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Error al crear sesión' });
-  }
-});
+     const session = db.prepare(`
+       SELECT ss.*, u.name as created_by_name
+       FROM sales_sessions ss
+       JOIN users u ON u.id = ss.created_by
+       WHERE ss.id = ?
+     `).get(result.lastInsertRowid);
+
+     logActivity(req.user.id, 'create_session', `Creó la sesión "${name}"`, company_id, session.id);
+     res.status(201).json(session);
+   } catch (err) {
+     console.error(err);
+     res.status(500).json({ error: 'Error al crear sesión' });
+   }
+ });
 
 // Obtener detalle de sesión con ventas
 router.get('/session/:id', (req, res) => {
@@ -146,14 +155,17 @@ router.post('/session/:id/items', (req, res) => {
       'INSERT INTO sales (session_id, user_id, product_name, price, quantity, image_url) VALUES (?, ?, ?, ?, ?, ?)'
     ).run(req.params.id, req.user.id, product_name.trim(), parseFloat(price), parseInt(quantity || 1), image_url || null);
 
-    const sale = db.prepare(`
-      SELECT s.*, u.name as sold_by_name
-      FROM sales s
-      JOIN users u ON u.id = s.user_id
-      WHERE s.id = ?
-    `).get(result.lastInsertRowid);
+const sale = db.prepare(`
+       SELECT s.*, u.name as sold_by_name
+       FROM sales s
+       JOIN users u ON u.id = s.user_id
+       WHERE s.id = ?
+     `).get(result.lastInsertRowid);
 
-    logActivity(req.user.id, 'add_sale', `Añadió "${product_name.trim()}" (${parseFloat(price).toFixed(2)}€ x${parseInt(quantity || 1)})`, session.company_id, session.id);
+     // Deduct stock from inventory
+     deductStock(db, session.company_id, product_name.trim(), parseInt(quantity || 1));
+
+     logActivity(req.user.id, 'add_sale', `Añadió "${product_name.trim()}" (${parseFloat(price).toFixed(2)}€ x${parseInt(quantity || 1)})`, session.company_id, session.id);
     res.status(201).json(sale);
   } catch (err) {
     console.error(err);

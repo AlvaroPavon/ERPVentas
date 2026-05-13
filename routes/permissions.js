@@ -5,12 +5,13 @@ const router = express.Router();
 
 // Get available permissions (all possible permissions)
 router.get('/available', (req, res) => {
-  res.json([
-    'manage_company', 'manage_members', 'manage_roles',
-    'manage_products', 'manage_sessions', 'add_sales',
-    'delete_sales', 'view_reports'
-  ]);
-});
+   res.json([
+     'manage_company', 'manage_members', 'manage_roles',
+     'manage_products', 'manage_sessions', 'manage_inventory',
+     'add_sales', 'delete_sales', 'view_reports',
+     'view_commissions', 'export_catalog'
+   ]);
+ });
 
 // Get role permissions for a company
 router.get('/:companyId', (req, res) => {
