@@ -1,8 +1,54 @@
 const express = require('express');
+const webPush = require('web-push');
 const { getDb } = require('../database');
 const { logActivity } = require('./activity');
 
 const router = express.Router();
+
+const VAPID_PUBLIC_KEY = 'BH4Nq5Rf56nzMxdioiEwIfoCh0OqoaTG6PoBVYOVGHggEplcD7LxvHfdXX0CUwRFKg0ugY0-zSk9-6OyB6qoOoQ';
+const VAPID_PRIVATE_KEY = 'rEMOWo7IoiYdu_jqLtbWLZsvA6nIeqq7AhSSzF9j8OY';
+
+// Set VAPID details if not already set
+try { webPush.setVapidDetails('mailto:admin@notasventa.app', VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY); } catch (e) {}
+
+// Helper to send push notification to a user
+async function sendPushToUser(userId, title, body, url) {
+  try {
+    const db = getDb();
+    const subs = db.prepare('SELECT * FROM push_subscriptions WHERE user_id = ?').all(userId);
+    for (const sub of subs) {
+      try {
+        await webPush.sendNotification({
+          endpoint: sub.endpoint,
+          keys: { p256dh: sub.p256dh, auth: sub.auth }
+        }, JSON.stringify({
+          title,
+          body,
+          icon: '/icons/icon-192.svg',
+          badge: '/icons/icon-192.svg',
+          data: { url: url || '/#chat' },
+          vibrate: [200, 100, 200]
+        }));
+      } catch (err) {
+        if (err.statusCode === 410 || err.statusCode === 404) {
+          db.prepare('DELETE FROM push_subscriptions WHERE id = ?').run(sub.id);
+        }
+      }
+    }
+  } catch (e) {}
+}
+
+// Check if a user is connected via WebSocket
+function isUserOnline(userId) {
+  if (!global.chatServer) return false;
+  let online = false;
+  global.chatServer.clients.forEach(client => {
+    if (client.readyState === 1 && client.userData && client.userData.id === userId) {
+      online = true;
+    }
+  });
+  return online;
+}
 
 // Get user's chat conversations
 router.get('/conversations', (req, res) => {
@@ -159,6 +205,20 @@ router.post('/conversations/:id/messages', (req, res) => {
       });
     }
 
+    // Send push notifications to offline participants
+    const participants = db.prepare('SELECT user_id FROM chat_conversations_participants WHERE conversation_id = ? AND user_id != ?')
+      .all(id, req.user.id);
+    for (const p of participants) {
+      if (!isUserOnline(p.user_id)) {
+        sendPushToUser(
+          p.user_id,
+          `💬 ${message.user_name}`,
+          message.content ? message.content.substring(0, 100) : '📷 Imagen',
+          '/#chat'
+        );
+      }
+    }
+
     res.status(201).json(message);
   } catch (err) {
     console.error(err);
@@ -284,6 +344,77 @@ router.get('/conversations/:id/participants', (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Error al obtener participantes' });
+  }
+});
+
+// Get friends that can be DM'd
+router.get('/contacts', (req, res) => {
+  try {
+    const db = getDb();
+    const contacts = db.prepare(`
+      SELECT DISTINCT u.id, u.name, u.avatar, u.email
+      FROM friend_requests fr
+      JOIN users u ON (CASE WHEN fr.sender_id = ? THEN u.id = fr.receiver_id ELSE u.id = fr.sender_id END)
+      WHERE (fr.sender_id = ? OR fr.receiver_id = ?) AND fr.status = 'accepted'
+      ORDER BY u.name ASC
+    `).all(req.user.id, req.user.id, req.user.id);
+
+    const existingDMs = db.prepare(`
+      SELECT cc.id, cp2.user_id as contact_id
+      FROM chat_conversations_participants cp1
+      JOIN chat_conversations_participants cp2 ON cp2.conversation_id = cp1.conversation_id
+      JOIN chat_conversations cc ON cc.id = cp1.conversation_id
+      WHERE cp1.user_id = ?
+      AND cc.type = 'dm'
+    `).all(req.user.id);
+
+    const dmMap = {};
+    existingDMs.forEach(dm => {
+      dmMap[dm.contact_id] = dm.id;
+    });
+
+    const result = contacts.map(c => ({
+      ...c,
+      existing_dm_id: dmMap[c.id] || null
+    }));
+
+    res.json(result);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Error al obtener contactos' });
+  }
+});
+
+// Delete conversation (only if user is participant)
+router.delete('/conversations/:id', (req, res) => {
+  try {
+    const db = getDb();
+    const { id } = req.params;
+
+    // Check user is participant
+    const participant = db.prepare(
+      'SELECT id FROM chat_conversations_participants WHERE conversation_id = ? AND user_id = ?'
+    ).get(id, req.user.id);
+
+    if (!participant) return res.status(403).json({ error: 'No eres participante' });
+
+    // Remove user from participants
+    db.prepare('DELETE FROM chat_conversations_participants WHERE conversation_id = ? AND user_id = ?')
+      .run(id, req.user.id);
+
+    // If no more participants, delete the conversation and its messages
+    const remaining = db.prepare('SELECT COUNT(*) as count FROM chat_conversations_participants WHERE conversation_id = ?')
+      .get(id).count;
+
+    if (remaining === 0) {
+      db.prepare('DELETE FROM chat_messages WHERE conversation_id = ?').run(id);
+      db.prepare('DELETE FROM chat_conversations WHERE id = ?').run(id);
+    }
+
+    res.json({ message: 'Conversación eliminada' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Error al eliminar conversación' });
   }
 });
 

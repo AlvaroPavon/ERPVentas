@@ -36,7 +36,9 @@ app.use('/api/push', authMiddleware, require('./routes/push'));
 app.use('/api/chat', authMiddleware, require('./routes/chat'));
 app.use('/api/commissions', authMiddleware, require('./routes/commissions'));
 app.use('/api/companies/:companyId/inventory', authMiddleware, require('./routes/inventory').router);
+app.use('/api/companies/:companyId/categories', authMiddleware, require('./routes/categories'));
 app.use('/api/companies/:companyId/products', authMiddleware, require('./routes/products'));
+app.use('/api/friends', authMiddleware, require('./routes/friends'));
 
 // Standalone product delete
 app.delete('/api/products/:productId', authMiddleware, (req, res) => {
@@ -115,6 +117,53 @@ app.get('*', (req, res) => {
 
 // Export for testing
 module.exports = app;
+
+// ====== Daily Summary Cron ======
+const cron = require('node-cron');
+const summaryService = require('./services/summary-service');
+const emailService = require('./services/email-service');
+
+/**
+ * Run the daily summary check — find all companies that should receive
+ * a summary email at this minute and send it to their owners/admins.
+ */
+async function runDailySummaries() {
+  const db = getDb();
+  const now = new Date();
+  const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+  try {
+    const companies = db.prepare(`
+      SELECT c.* FROM companies c
+      WHERE c.email_summary_enabled = 1
+      AND c.email_summary_time = ?
+    `).all(currentTime);
+
+    for (const company of companies) {
+      const summary = summaryService.getDailySummary(company.id);
+
+      // Send to all owners and admins
+      const recipients = db.prepare(`
+        SELECT u.email FROM company_users cu
+        JOIN users u ON u.id = cu.user_id
+        WHERE cu.company_id = ? AND (cu.role = 'owner' OR cu.role = 'admin')
+      `).all(company.id);
+
+      for (const recipient of recipients) {
+        await emailService.sendSummaryEmail(recipient.email, summary);
+      }
+    }
+  } catch (err) {
+    console.error('[DailySummary] Error:', err.message);
+  }
+}
+
+// Schedule cron only when running standalone (not in tests)
+if (require.main === module) {
+  cron.schedule('* * * * *', () => {
+    runDailySummaries();
+  });
+}
 
 if (require.main === module) {
   const server = http.createServer(app);

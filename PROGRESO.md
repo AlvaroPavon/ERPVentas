@@ -138,11 +138,81 @@ Con módulo de inventario, sistema de comisiones, dashboard por empresa y export
 - [x] Auto-creación de canal "general" por empresa
 - [x] Estilos adaptados a One UI 8.5
 
+### 17. 📧 Resumen Diario por Email (v1.6.0)
+- [x] Dependencias: nodemailer + node-cron en package.json
+- [x] Migración DB: columnas email_summary_enabled y email_summary_time en companies
+- [x] Servicio de agregación: services/summary-service.js (getDailySummary)
+- [x] Servicio de email: services/email-service.js (nodemailer + template HTML)
+- [x] Template HTML estilo One UI: templates/email-summary.html
+- [x] API: PATCH /api/companies/:id/settings (owner/admin)
+- [x] Cron automático en server.js (ejecución cada minuto, matchea hora configurada)
+- [x] Tests unitarios: summary-service (5) + email-service (4)
+- [x] Tests de integración: settings API + cron (5)
+- [x] 14 tests nuevos — total: 123 tests pasando
+
+### 18. 🏷️ Categorías/Etiquetas en Productos (v1.6.0)
+- [x] Nueva tabla `categories` (id, company_id, name, color, created_at)
+- [x] Columna `category_id` + `tags` (JSON array) en products
+- [x] Migración automática de categorías existentes (category TEXT → categories table)
+- [x] CRUD de categorías: routes/categories.js con aislamiento por empresa
+- [x] Filtro de productos por categoría y etiquetas (JSON_EACH)
+- [x] Actualización de productos con category_id y tags
+- [x] Tests: categories (8) + products (11) — 19 nuevos
+- [x] Total: 142 tests pasando
+
+### 19. 🐛 Fix: Pantalla de Carga (Splash Screen)
+- [x] **CAUSA**: Redeclaración `const chatSocket` entre `chat.js` y `app.js` → app.js nunca se ejecutaba
+- [x] Eliminada redeclaración de `chatSocket` y `EMOJI_PICKER` en `app.js` (ya están en `chat.js`)
+- [x] Referencias actualizadas a `window.chatSocket` en `app.js`
+- [x] **CAUSA 2**: Error SQL en BD existente — `CREATE INDEX` en `category_id` fallaba porque la columna no existía en DB legacy
+- [x] Movido `CREATE INDEX idx_products_category` a después de las migraciones ALTER TABLE
+- [x] Server arranca limpio con BD existente
+
+### 20. 🐛 Fix: Chat — "Cargando chat..." infinito + contactos + borrar chat
+- [x] **CAUSA**: `pages/chat.js` no estaba en los script tags del HTML, solo se cargaba via `import()` dinámico que no funcionaba para funciones globales
+- [x] Agregado `<script src="js/pages/chat.js">` al index.html
+- [x] Simplificado route de chat en app.js — llamada directa a `renderChatPage()`
+- [x] **Contactos**: Nuevo endpoint `GET /api/chat/contacts` — devuelve compañeros de empresa
+- [x] **Borrar chat**: Nuevo endpoint `DELETE /api/chat/conversations/:id` — elimina y limpia si no quedan participantes
+- [x] Sidebar muestra contactos como chats iniciables cuando no hay conversaciones
+- [x] Modal de contactos con tap para iniciar DM o abrir DM existente
+- [x] Botón de eliminar conversación en el header (🗑️) con confirmación
+- [x] Botón de refrescar (🔄) para recargar conversaciones
+- [x] "No hay contactos" con mensaje claro cuando no hay compañeros de empresa
+- [x] Estilos: `.btn-danger`, `.contact-avatar`, `.list-empty-sub`, `.chat-sidebar-footer`
+- [x] `openImageModal()` agregado para imágenes en mensajes
+
+### 20b. 🧑‍🤝‍🧑 Sistema de Amigos (v1.7.0)
+- [x] Tabla `friend_requests` en BD (sender, receiver, status: pending/accepted/rejected)
+- [x] Ruta `routes/friends.js`: search, send, accept, reject, list, remove
+- [x] Contactos de chat ahora usan amigos (no company members)
+- [x] Buscar personas por nombre/email con estado (amigo/pendiente/enviar solicitud)
+- [x] Solicitudes de amistad aparecen en el sidebar del chat
+- [x] Botones Aceptar/Rechazar en cada solicitud
+- [x] Modal de amigos con chat directo (DM) integrado
+- [x] Botón "🔍 Buscar" para encontrar y agregar personas
+
+### 20c. 📨 Chat en Tiempo Real + Push Notifications
+- [x] Mensajes via WebSocket aparecen al instante sin recargar
+- [x] Handler `onMessage` en chatSocket agrega mensaje al chat abierto
+- [x] Actualiza la lista de conversaciones automáticamente
+- [x] Notificaciones push para mensajes de chat (VAPID)
+- [x] Si el destinatario está offline, se le envía push con nombre y mensaje
+- [x] Helper `sendPushToUser()` y `isUserOnline()` en routes/chat.js
+
+### 21. 🎨 Fix: Dashboard chips + Chat layout
+- [x] **Dashboard**: Agregado CSS `.chip-group` y `.chip` — estilo One UI con pills, active con gradient, hover/active
+- [x] **Chat**: Altura corregida con `calc(100vh - header - nav - 20px)`
+- [x] **Chat**: Container con borde y border-radius 18dp (One UI)
+- [x] **Chat mobile**: Sidebar full-width cuando no hay chat abierto, se oculta al abrir conversación
+- [x] **Chat mobile**: Selector CSS `.chat-sidebar:not(.collapsed) ~ .chat-main` para toggle limpio
+- [x] **Chat**: Botón atrás restaura sidebar (`.collapsed` removido en closeChatView)
+- [x] **Chat**: Estilos para `.chat-message-avatar img` (object-fit: cover)
+- [x] **Chat**: Sidebar footer "👥 Contactos" visible solo en desktop
+
 ## Funcionalidades Pendientes (Futuras)
 
 ### Próximas
-- [ ] **Resumen diario por email** — envío automático de resumen al owner/admin
-- [ ] **Categorías/etiquetas en productos** — agrupar y filtrar
 - [ ] **Exportar dashboard como PDF/imagen** — compartir gráficas
 - [ ] **Comparativa vs periodo anterior** en dashboard
 - [ ] **Modo offline completo** — IndexedDB + sincronización

@@ -9,13 +9,39 @@ const router = express.Router({ mergeParams: true });
 router.get('/', (req, res) => {
   try {
     const db = getDb();
-    const products = db.prepare(
-      'SELECT * FROM products WHERE company_id = ? ORDER BY name ASC'
-    ).all(req.params.companyId);
-    // Parse prices JSON for each product
+    const { category, tags } = req.query;
+
+    let sql = 'SELECT * FROM products WHERE company_id = ?';
+    const params = [req.params.companyId];
+
+    if (category) {
+      sql += ' AND category_id = (SELECT id FROM categories WHERE name = ? AND company_id = ?)';
+      params.push(category, req.params.companyId);
+    }
+
+    if (tags) {
+      const tagList = tags.split(',').map(t => t.trim()).filter(Boolean);
+      if (tagList.length > 0) {
+        const tagConditions = tagList.map(() =>
+          "EXISTS (SELECT 1 FROM json_each(products.tags) WHERE value = ?)"
+        );
+        sql += ' AND (' + tagConditions.join(' OR ') + ')';
+        params.push(...tagList);
+      }
+    }
+
+    sql += ' ORDER BY name ASC';
+
+    const products = db.prepare(sql).all(...params);
+    // Parse JSON fields for each product
     products.forEach(p => {
       if (p.prices) {
         try { p.prices = JSON.parse(p.prices); } catch { p.prices = null; }
+      }
+      if (p.tags) {
+        try { p.tags = JSON.parse(p.tags); } catch { p.tags = []; }
+      } else {
+        p.tags = [];
       }
     });
     res.json(products);
@@ -28,7 +54,7 @@ router.get('/', (req, res) => {
 // Create a product
 router.post('/', (req, res) => {
   try {
-    const { name, price, category, image_url, prices } = req.body;
+    const { name, price, category, category_id, tags, image_url, prices } = req.body;
     if (!name || !name.trim()) return res.status(400).json({ error: 'Nombre requerido' });
 
     const db = getDb();
@@ -41,17 +67,92 @@ router.post('/', (req, res) => {
       pricesJson = JSON.stringify(prices);
     }
 
+    let tagsJson = '[]';
+    if (tags && Array.isArray(tags)) {
+      tagsJson = JSON.stringify(tags);
+    }
+
     const result = db.prepare(
-      'INSERT INTO products (company_id, name, price, category, image_url, created_by, prices) VALUES (?, ?, ?, ?, ?, ?, ?)'
-    ).run(req.params.companyId, name.trim(), parseFloat(price || 0), category || '', image_url || null, req.user.id, pricesJson);
+      'INSERT INTO products (company_id, name, price, category, category_id, tags, image_url, created_by, prices) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+    ).run(
+      req.params.companyId, name.trim(), parseFloat(price || 0), category || '',
+      category_id || null, tagsJson, image_url || null, req.user.id, pricesJson
+    );
 
     const product = db.prepare('SELECT * FROM products WHERE id = ?').get(result.lastInsertRowid);
     if (product.prices) { try { product.prices = JSON.parse(product.prices); } catch { product.prices = null; } }
+    if (product.tags) { try { product.tags = JSON.parse(product.tags); } catch { product.tags = []; } }
     logActivity(req.user.id, 'create_product', `Creó el producto "${name.trim()}"`, req.params.companyId);
     res.status(201).json(product);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Error al crear producto' });
+  }
+});
+
+// Update a product
+router.put('/:productId', (req, res) => {
+  try {
+    const { name, price, category, category_id, tags, image_url, prices } = req.body;
+    const db = getDb();
+
+    const product = db.prepare('SELECT * FROM products WHERE id = ? AND company_id = ?')
+      .get(req.params.productId, req.params.companyId);
+    if (!product) return res.status(404).json({ error: 'Producto no encontrado' });
+
+    const membership = db.prepare('SELECT id FROM company_users WHERE company_id = ? AND user_id = ?')
+      .get(req.params.companyId, req.user.id);
+    if (!membership) return res.status(403).json({ error: 'No perteneces a esta empresa' });
+
+    // Build update fields dynamically
+    const fields = [];
+    const values = [];
+
+    if (name !== undefined) {
+      if (!name.trim()) return res.status(400).json({ error: 'Nombre requerido' });
+      fields.push('name = ?');
+      values.push(name.trim());
+    }
+    if (price !== undefined) {
+      fields.push('price = ?');
+      values.push(parseFloat(price));
+    }
+    if (category !== undefined) {
+      fields.push('category = ?');
+      values.push(category || '');
+    }
+    if (category_id !== undefined) {
+      fields.push('category_id = ?');
+      values.push(category_id || null);
+    }
+    if (tags !== undefined) {
+      fields.push('tags = ?');
+      values.push(Array.isArray(tags) ? JSON.stringify(tags) : '[]');
+    }
+    if (image_url !== undefined) {
+      fields.push('image_url = ?');
+      values.push(image_url || null);
+    }
+    if (prices !== undefined) {
+      fields.push('prices = ?');
+      values.push(Array.isArray(prices) && prices.length > 0 ? JSON.stringify(prices) : null);
+    }
+
+    if (fields.length === 0) {
+      return res.status(400).json({ error: 'No hay campos para actualizar' });
+    }
+
+    values.push(req.params.productId);
+    db.prepare(`UPDATE products SET ${fields.join(', ')} WHERE id = ?`).run(...values);
+
+    const updated = db.prepare('SELECT * FROM products WHERE id = ?').get(req.params.productId);
+    if (updated.prices) { try { updated.prices = JSON.parse(updated.prices); } catch { updated.prices = null; } }
+    if (updated.tags) { try { updated.tags = JSON.parse(updated.tags); } catch { updated.tags = []; } }
+    logActivity(req.user.id, 'update_product', `Actualizó el producto "${updated.name}"`, req.params.companyId);
+    res.json(updated);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Error al actualizar producto' });
   }
 });
 

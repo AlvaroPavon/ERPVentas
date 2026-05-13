@@ -301,4 +301,58 @@ router.post('/:id/join-requests/:requestId/reject', (req, res) => {
   }
 });
 
+// Actualizar configuración de resumen diario (owner/admin only)
+router.patch('/:id/settings', (req, res) => {
+  try {
+    const db = getDb();
+
+    // Verificar que la empresa existe
+    const company = db.prepare('SELECT * FROM companies WHERE id = ?').get(req.params.id);
+    if (!company) return res.status(404).json({ error: 'Empresa no encontrada' });
+
+    // Verificar que el usuario es owner o admin
+    const membership = db.prepare('SELECT role FROM company_users WHERE company_id = ? AND user_id = ?')
+      .get(req.params.id, req.user.id);
+    if (!membership || (membership.role !== 'owner' && membership.role !== 'admin')) {
+      return res.status(403).json({ error: 'Solo el owner o admin puede modificar la configuración' });
+    }
+
+    const { email_summary_enabled, email_summary_time } = req.body;
+
+    // Validar formato de hora si se proporciona
+    if (email_summary_time !== undefined && email_summary_time !== null) {
+      const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)$/;
+      if (!timeRegex.test(email_summary_time)) {
+        return res.status(400).json({ error: 'Formato de hora inválido. Use HH:mm (ej: 08:00)' });
+      }
+    }
+
+    const updates = [];
+    const params = [];
+
+    if (email_summary_enabled !== undefined) {
+      updates.push('email_summary_enabled = ?');
+      params.push(email_summary_enabled ? 1 : 0);
+    }
+    if (email_summary_time !== undefined) {
+      updates.push('email_summary_time = ?');
+      params.push(email_summary_time || null);
+    }
+
+    if (updates.length === 0) {
+      return res.status(400).json({ error: 'No hay campos para actualizar' });
+    }
+
+    params.push(req.params.id);
+    db.prepare(`UPDATE companies SET ${updates.join(', ')} WHERE id = ?`).run(...params);
+
+    const updated = db.prepare('SELECT * FROM companies WHERE id = ?').get(req.params.id);
+    logActivity(req.user.id, 'update_settings', 'Actualizó la configuración de resumen diario', company.id);
+    res.json(updated);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Error al actualizar configuración' });
+  }
+});
+
 module.exports = router;

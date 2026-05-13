@@ -22,6 +22,8 @@ Aplicación web progresiva (PWA) instalable en Android e iOS para gestionar vent
 - **Logs de Actividad**: Historial completo de todas las acciones con paginación
 - **Backup Automático**: Backup diario de la BD con rotación de 7 días + descarga manual
 - **PWA Instalable**: Instálala en tu móvil como una app nativa
+- **Resumen Diario por Email**: Envío automático de resumen de ventas al owner/admin al final del día
+- **Chat Interno**: Comunicación en tiempo real entre miembros de la empresa vía WebSocket
 
 ## Tecnologías
 
@@ -49,9 +51,14 @@ notas de venta/
 ├── GUIA_IA.md                 # Guía técnica para IA
 ├── middleware/
 │   └── auth.js                # Middleware de autenticación JWT
+├── services/
+│   ├── summary-service.js     # Agregación de datos para resumen diario
+│   └── email-service.js       # Envío de emails (nodemailer)
+├── templates/
+│   └── email-summary.html     # Template HTML para resumen diario
 ├── routes/
 │   ├── auth.js                # Registro, login, perfil
-│   ├── companies.js           # CRUD empresas, miembros, join requests, roles
+│   ├── companies.js           # CRUD empresas, miembros, join requests, roles, settings
 │   ├── sales.js               # Sesiones de venta, productos, CSV, Excel, edición
 │   ├── dashboard.js           # Estadísticas básicas y avanzadas
 │   ├── users.js               # Perfil, avatar, cambio contraseña
@@ -81,6 +88,26 @@ notas de venta/
 │           ├── join-requests.js # Solicitudes enviadas y recibidas
 │           ├── profile.js     # Perfil, avatar, push, backups, dark mode auto
 │           └── activity.js    # Logs de actividad
+├── tests/
+│   ├── auth.test.js            # Tests de autenticación
+│   ├── basic.test.js           # Tests básicos del servidor
+│   ├── companies.test.js       # Tests de empresas
+│   ├── sales.test.js           # Tests de ventas
+│   ├── dashboard.test.js       # Tests de dashboard
+│   ├── users.test.js           # Tests de usuarios
+│   ├── activity.test.js        # Tests de actividad
+│   ├── permissions.test.js     # Tests de permisos
+│   ├── products.test.js        # Tests de productos
+│   ├── inventory.test.js       # Tests de inventario
+│   ├── commissions.test.js     # Tests de comisiones
+│   ├── push.test.js            # Tests de notificaciones push
+│   ├── services/
+│   │   ├── summary-service.test.js  # Tests de resumen diario
+│   │   └── email-service.test.js    # Tests de email
+│   └── integration/
+│       └── email-summary.test.js    # Tests integración email
+├── backups/                   # Backups automáticos (rotación 7 días)
+├── openspec/                  # Documentación SDD
 └── ventas.db                  # Base de datos (se crea al iniciar)
 ```
 
@@ -127,6 +154,11 @@ Todas las rutas excepto `/api/auth/*` requieren header `Authorization: Bearer <t
 | GET | `/api/companies/:id/join-requests` | Solicitudes de una empresa |
 | POST | `/api/companies/:id/join-requests/:requestId/accept` | Aceptar solicitud |
 | POST | `/api/companies/:id/join-requests/:requestId/reject` | Rechazar solicitud |
+
+### Configuración de Empresa
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| PATCH | `/api/companies/:id/settings` | Actualizar configuración (email summary, etc.) |
 
 ### Permisos
 | Método | Ruta | Descripción |
@@ -189,11 +221,56 @@ Todas las rutas excepto `/api/auth/*` requieren header `Authorization: Bearer <t
 | GET | `/api/push/status` | Estado de suscripción |
 | POST | `/api/push/test` | Enviar notificación de prueba |
 
+### Chat
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| GET | `/api/chat/conversations` | Conversaciones del usuario |
+| POST | `/api/chat/conversations` | Crear conversación |
+| GET | `/api/chat/conversations/:id/messages` | Mensajes de una conversación |
+| POST | `/api/chat/conversations/:id/messages` | Enviar mensaje |
+| POST | `/api/chat/conversations/:id/read` | Marcar como leído |
+| PUT | `/api/chat/messages/:id/reaction` | Reaccionar con emoji |
+| GET | `/api/chat/conversations/:id/members` | Miembros de la conversación |
+| POST | `/api/chat/conversations/:id/members` | Añadir miembro |
+| DELETE | `/api/chat/conversations/:id/members/:userId` | Eliminar miembro |
+| WebSocket | `/ws?token=<jwt>&conversations=[ids]` | Conexión en tiempo real |
+
 ### Backup
 | Método | Ruta | Descripción |
 |--------|------|-------------|
 | GET | `/api/backup` | Descargar backup de BD |
 | GET | `/api/backup/info` | Información del backup |
+
+## Resumen Diario por Email
+
+A partir de v1.6.0, la aplicación puede enviar un resumen automático de ventas por email a los owners/admins de cada empresa.
+
+### Configuración
+
+1. **Variables de entorno** (para el envío SMTP):
+   ```
+   SMTP_HOST=smtp.tuproveedor.com
+   SMTP_PORT=587
+   SMTP_USER=tu@email.com
+   SMTP_PASS=tu-contraseña
+   ```
+
+2. **Por empresa**: los owners/admins pueden configurar desde la API:
+   - `PATCH /api/companies/:id/settings` con:
+     ```json
+     {
+       "email_summary_enabled": true,
+       "email_summary_time": "20:00"
+     }
+     ```
+
+### Contenido del email
+
+- Total de ventas del día
+- Cantidad de productos vendidos
+- Cantidad de sesiones de venta
+- Top 5 productos más vendidos
+- Desglose por vendedor
 
 ## Base de Datos
 
@@ -211,6 +288,12 @@ SQLite con las siguientes tablas:
 | role_permissions | Permisos granulares por rol y empresa |
 | push_subscriptions | Suscripciones a notificaciones push |
 | activity_logs | Registro histórico de acciones |
+| chat_conversations | Conversaciones de chat |
+| chat_conversations_participants | Participantes de cada conversación |
+| chat_messages | Mensajes con reacciones emoji |
+| inventory | Stock de productos por empresa |
+| inventory_movements | Movimientos de inventario |
+| commission_config | Configuración de comisiones por rol |
 
 ## Diseño UI
 

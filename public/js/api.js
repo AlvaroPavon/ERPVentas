@@ -102,6 +102,8 @@ const API = {
   addChatReaction(messageId, emoji) { return this.post(`/api/chat/messages/${messageId}/reaction`, { emoji }); },
   getChatParticipants(conversationId) { return this.get(`/api/chat/conversations/${conversationId}/participants`); },
   getChatOnline(conversationId) { return this.get(`/api/chat/conversations/${conversationId}/online`); },
+  getChatContacts() { return this.get('/api/chat/contacts'); },
+  deleteChatConversation(conversationId) { return this.del(`/api/chat/conversations/${conversationId}`); },
 
   // Export helpers
   downloadBlob(url, filename) {
@@ -160,6 +162,16 @@ const API = {
   getCommissionConfig(companyId) { return this.get(`/api/commissions/config/${companyId}`); },
   updateCommissionConfig(companyId, role, pct) { return this.put(`/api/commissions/config/${companyId}/${role}`, { commission_pct: pct }); },
   getCommissionSummary(companyId) { return this.get(`/api/commissions/summary/${companyId}`); },
+
+  // Friends
+  searchUsers(q) { return this.get(`/api/friends/search?q=${encodeURIComponent(q)}`); },
+  sendFriendRequest(userId) { return this.post('/api/friends/request', { user_id: userId }); },
+  getFriendRequests() { return this.get('/api/friends/requests/incoming'); },
+  getSentFriendRequests() { return this.get('/api/friends/requests/sent'); },
+  acceptFriendRequest(id) { return this.post(`/api/friends/requests/${id}/accept`); },
+  rejectFriendRequest(id) { return this.post(`/api/friends/requests/${id}/reject`); },
+  getFriends() { return this.get('/api/friends'); },
+  removeFriend(id) { return this.del(`/api/friends/${id}`); },
 
   // User
   getProfile() { return this.get('/api/users/profile'); },

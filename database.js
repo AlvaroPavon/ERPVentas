@@ -109,12 +109,23 @@ function initSchema() {
     );
     CREATE INDEX IF NOT EXISTS idx_role_perms_company ON role_permissions(company_id);
 
+    CREATE TABLE IF NOT EXISTS categories (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      company_id INTEGER REFERENCES companies(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      color TEXT DEFAULT '#3B82F6',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_categories_company ON categories(company_id);
+
     CREATE TABLE IF NOT EXISTS products (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       company_id INTEGER REFERENCES companies(id) ON DELETE CASCADE,
       name TEXT NOT NULL,
       price REAL NOT NULL DEFAULT 0,
       category TEXT DEFAULT '',
+      category_id INTEGER DEFAULT NULL REFERENCES categories(id) ON DELETE SET NULL,
+      tags TEXT DEFAULT '[]',
       image_url TEXT DEFAULT NULL,
       created_by INTEGER REFERENCES users(id),
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -165,6 +176,18 @@ function initSchema() {
       commission_pct REAL NOT NULL DEFAULT 0,
       UNIQUE(company_id, role)
     );
+
+    CREATE TABLE IF NOT EXISTS friend_requests (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      sender_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+      receiver_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+      status TEXT DEFAULT 'pending',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME,
+      UNIQUE(sender_id, receiver_id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_friend_requests_sender ON friend_requests(sender_id);
+    CREATE INDEX IF NOT EXISTS idx_friend_requests_receiver ON friend_requests(receiver_id);
   `);
 
   // Migrate: add image_url column if missing
@@ -177,6 +200,48 @@ function initSchema() {
   try { db.exec('ALTER TABLE products ADD COLUMN stock INTEGER DEFAULT 0'); } catch (e) {}
   // Migrate: add profit column to sales
   try { db.exec('ALTER TABLE sales ADD COLUMN profit REAL DEFAULT 0'); } catch (e) {}
+  // Migrate: add email summary columns to companies
+  try { db.exec('ALTER TABLE companies ADD COLUMN email_summary_enabled INTEGER DEFAULT 0'); } catch (e) {}
+  try { db.exec('ALTER TABLE companies ADD COLUMN email_summary_time TEXT DEFAULT NULL'); } catch (e) {}
+  // Migrate: add category_id and tags columns to products
+  try { db.exec('ALTER TABLE products ADD COLUMN category_id INTEGER DEFAULT NULL'); } catch (e) {}
+  try { db.exec('ALTER TABLE products ADD COLUMN tags TEXT DEFAULT \'[]\''); } catch (e) {}
+  // Index for category_id (must be after ALTER TABLE for existing DBs)
+  try { db.exec('CREATE INDEX IF NOT EXISTS idx_products_category ON products(category_id)'); } catch (e) {}
+
+  // Data migration: migrate existing category text to categories table and set category_id
+  try {
+    const catsToMigrate = db.prepare('SELECT DISTINCT company_id, category FROM products WHERE category IS NOT NULL AND category != \'\'').all();
+    if (catsToMigrate.length > 0) {
+      const insertCat = db.prepare('INSERT OR IGNORE INTO categories (company_id, name) VALUES (?, ?)');
+      catsToMigrate.forEach(c => insertCat.run(c.company_id, c.category));
+      db.prepare(`
+        UPDATE products SET category_id = (
+          SELECT id FROM categories
+          WHERE categories.name = products.category
+          AND categories.company_id = products.company_id
+        ) WHERE category IS NOT NULL AND category != ''
+      `).run();
+    }
+  } catch (e) {}
+  // Set default empty tags array for products with NULL tags
+  try { db.exec("UPDATE products SET tags = '[]' WHERE tags IS NULL"); } catch (e) {}
+  // Friend requests table migration (for existing DBs)
+  try {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS friend_requests (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        sender_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        receiver_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        status TEXT DEFAULT 'pending',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME,
+        UNIQUE(sender_id, receiver_id)
+      );
+      CREATE INDEX IF NOT EXISTS idx_friend_requests_sender ON friend_requests(sender_id);
+      CREATE INDEX IF NOT EXISTS idx_friend_requests_receiver ON friend_requests(receiver_id);
+    `);
+  } catch (e) {}
 
   // Chat tables
   db.exec(`

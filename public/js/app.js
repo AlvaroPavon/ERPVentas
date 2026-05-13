@@ -1,48 +1,4 @@
-// Chat WebSocket Manager (inline to avoid extra fetch on first load)
-const chatSocket = {
-  ws: null,
-  onMessage: null,
-  onTyping: null,
-
-  connect(conversationIds) {
-    const token = localStorage.getItem('token');
-    if (!token) return;
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const host = window.location.host;
-    const convParam = encodeURIComponent(JSON.stringify(conversationIds || []));
-    try {
-      this.ws = new WebSocket(`${protocol}//${host}/ws?token=${token}&conversations=${convParam}`);
-    } catch(e) { return; }
-
-    this.ws.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        if (data.event === 'message' && this.onMessage) this.onMessage(data);
-        if (data.event === 'typing' && this.onTyping) this.onTyping(data);
-      } catch(e) {}
-    };
-
-    this.ws.onclose = () => {
-      setTimeout(() => this.connect(conversationIds), 3000);
-    };
-
-    this.ws.onerror = () => {};
-  },
-
-  send(event, data) {
-    if (this.ws && this.ws.readyState === 1) {
-      this.ws.send(JSON.stringify({ event, ...data }));
-    }
-  },
-
-  subscribe(conversationIds) {
-    this.send('subscribe', { conversationIds });
-  }
-};
-
-window.chatSocket = chatSocket;
-
-const EMOJI_PICKER = ['👍', '❤️', '😂', '😮', '😢', '🎉', '🔥', '👏', '🤔', '✅'];
+// chatSocket y EMOJI_PICKER ya están definidos en chat.js - usamos window.chatSocket
 
 const App = {
   user: null,
@@ -124,20 +80,13 @@ const App = {
     Router.register('join-requests', (el) => renderJoinRequests(el));
     Router.register('inventory', (el, p) => renderInventory(el, p));
     Router.register('commissions', (el, p) => renderCommissions(el, p));
-    Router.register('chat', (el) => {
-      if (typeof renderChatPage === 'function') {
-        renderChatPage(el);
-      } else {
-        el.innerHTML = '<div class="list-empty"><p>Cargando chat...</p></div>';
-        import('/js/pages/chat.js').then(() => renderChatPage(el));
-      }
-    });
+    Router.register('chat', (el) => renderChatPage(el));
 
     // Initialize WebSocket
     const wsToken = localStorage.getItem('token');
     if (wsToken) {
-      chatSocket.connect([]);
-      chatSocket.onMessage = () => {
+      window.chatSocket.connect([]);
+      window.chatSocket.onMessage = () => {
         updateChatBadge();
       };
     }
@@ -257,7 +206,7 @@ const App = {
   logout() {
     localStorage.removeItem('token');
     API.setToken(null);
-    chatSocket.ws = null;
+    window.chatSocket.ws = null;
     this.user = null;
     document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
     this.showAuth();
