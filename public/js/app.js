@@ -121,6 +121,8 @@ const App = {
       try {
         const user = await API.me();
         this.user = user;
+        const lang = user.language || 'es';
+        await I18n.load(lang);
         this.showMainApp();
         Router.go('home', {});
       } catch {
@@ -155,7 +157,7 @@ const App = {
     document.getElementById('bottom-nav').style.display = 'flex';
     document.getElementById('app-header').style.display = 'flex';
     this.updateHeader();
-    document.getElementById('page-title').textContent = 'Inicio';
+    document.getElementById('page-title').textContent = I18n.t('dashboard.title');
     Router.setContainer('page-content');
   },
 

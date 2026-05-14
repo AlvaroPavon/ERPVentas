@@ -1,11 +1,19 @@
 let homeCharts = {};
 
+const LANGUAGES = [
+  { code: 'es', labelKey: 'language.es' },
+  { code: 'en', labelKey: 'language.en' },
+  { code: 'ca', labelKey: 'language.ca' },
+  { code: 'eu', labelKey: 'language.eu' },
+  { code: 'gl', labelKey: 'language.gl' },
+];
+
 const WIDGETS = [
-  { id: 'stats', label: 'Resumen global', icon: '💰', default: true },
-  { id: 'monthly', label: 'Ventas del Mes (gráfico)', icon: '📈', default: true },
-  { id: 'topProducts', label: 'Productos Más Vendidos', icon: '🏆', default: true },
-  { id: 'dailyComparison', label: 'Comparativa por Día', icon: '📅', default: true },
-  { id: 'advancedStats', label: 'Estadísticas Avanzadas', icon: '📊', default: true },
+  { id: 'stats', labelKey: 'widget.stats', icon: '💰', default: true },
+  { id: 'monthly', labelKey: 'widget.monthly', icon: '📈', default: true },
+  { id: 'topProducts', labelKey: 'widget.topProducts', icon: '🏆', default: true },
+  { id: 'dailyComparison', labelKey: 'widget.dailyComparison', icon: '📅', default: true },
+  { id: 'advancedStats', labelKey: 'widget.advancedStats', icon: '📊', default: true },
 ];
 
 function getWidgetSettings() {
@@ -33,15 +41,20 @@ function destroyHomeCharts() {
 }
 
 async function renderHome(el) {
-  App.updateTitle('Inicio');
+  App.updateTitle(I18n.t('dashboard.title'));
 
   const now = new Date();
   const year = now.getFullYear();
   const month = now.getMonth() + 1;
 
   el.innerHTML = `
-    <div style="display:flex;justify-content:flex-end;margin-bottom:8px;">
-      <button class="btn btn-ghost btn-sm" id="btn-customize-dashboard" style="font-size:12px;">⚙️ Personalizar</button>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;" class="dashboard-toolbar">
+      <div class="lang-selector">
+        <select id="lang-select" class="lang-select" style="font-size:12px;padding:4px 8px;border-radius:6px;border:1px solid var(--border-color);background:var(--card-bg);color:var(--text-color);">
+          ${LANGUAGES.map(l => `<option value="${l.code}" ${l.code === I18n.currentLang ? 'selected' : ''}>${I18n.t(l.labelKey)}</option>`).join('')}
+        </select>
+      </div>
+      <button class="btn btn-ghost btn-sm" id="btn-customize-dashboard" style="font-size:12px;">⚙️ ${I18n.t('dashboard.customize')}</button>
     </div>
 
     <div id="widget-stats" ${!isWidgetEnabled('stats') ? 'style="display:none;"' : ''}>
@@ -59,27 +72,27 @@ async function renderHome(el) {
 
     <div id="widget-monthly" ${!isWidgetEnabled('monthly') ? 'style="display:none;"' : ''}>
       <div class="card">
-        <div class="card-title">📈 Ventas del Mes</div>
+        <div class="card-title">📈 ${I18n.t('chart.monthlySales')}</div>
         <div class="chart-container"><canvas id="chart-monthly"></canvas></div>
       </div>
     </div>
 
     <div id="widget-topProducts" ${!isWidgetEnabled('topProducts') ? 'style="display:none;"' : ''}>
       <div class="card">
-        <div class="card-title">🏆 Productos Más Vendidos</div>
+        <div class="card-title">🏆 ${I18n.t('chart.topProducts')}</div>
         <div class="chart-container"><canvas id="chart-top"></canvas></div>
       </div>
     </div>
 
     <div id="widget-dailyComparison" ${!isWidgetEnabled('dailyComparison') ? 'style="display:none;"' : ''}>
       <div class="card">
-        <div class="card-title">📅 Comparativa por Día</div>
+        <div class="card-title">📅 ${I18n.t('chart.dailyComparison')}</div>
         <div class="chart-container"><canvas id="chart-daily"></canvas></div>
       </div>
     </div>
 
     <div id="widget-advancedStats" ${!isWidgetEnabled('advancedStats') ? 'style="display:none;"' : ''}>
-      <div class="section-title" style="margin-top:16px;">📊 Estadísticas Avanzadas</div>
+      <div class="section-title" style="margin-top:16px;">📊 ${I18n.t('widget.advancedStats')}</div>
       <div id="advanced-stats">
         <div class="stats-grid">
           <div class="stat-card"><div class="spinner"></div></div>
@@ -87,18 +100,18 @@ async function renderHome(el) {
         </div>
       </div>
       <div class="card" id="card-advanced-monthly" style="display:none;">
-        <div class="card-title">📊 Tendencia Mensual (6 meses)</div>
+        <div class="card-title">📊 ${I18n.t('chart.monthlyTrend')}</div>
         <div class="chart-container"><canvas id="chart-monthly-trend"></canvas></div>
       </div>
       <div class="card" id="card-advanced-sellers" style="display:none;">
-        <div class="card-title">👥 Ventas por Vendedor</div>
+        <div class="card-title">👥 ${I18n.t('chart.sellersBreakdown')}</div>
         <div id="sellers-breakdown"></div>
       </div>
     </div>
   `;
 
   if (Object.values(getWidgetSettings()).every(v => v === false)) {
-    el.innerHTML += '<div class="list-empty" style="margin-top:16px;"><div class="empty-icon">👁️</div><p>Todos los widgets están ocultos. Haz clic en ⚙️ Personalizar para mostrarlos.</p></div>';
+    el.innerHTML += `<div class="list-empty" style="margin-top:16px;"><div class="empty-icon">👁️</div><p>${I18n.t('dashboard.noWidgets')}</p></div>`;
   }
 
   loadHomeData(year, month);
@@ -114,6 +127,20 @@ async function renderHome(el) {
   });
 
   document.getElementById('btn-customize-dashboard')?.addEventListener('click', showCustomizeModal);
+
+  document.getElementById('lang-select')?.addEventListener('change', async (e) => {
+    const lang = e.target.value;
+    await I18n.load(lang);
+    try {
+      await API.updateLanguage(lang);
+    } catch (err) {
+      console.error('Failed to save language preference:', err);
+    }
+    // Re-render home with new language
+    const pageContent = document.getElementById(Router.containerId);
+    destroyHomeCharts();
+    renderHome(pageContent);
+  });
 }
 
 function showCustomizeModal() {
@@ -122,7 +149,7 @@ function showCustomizeModal() {
     <div class="list-item" style="cursor:pointer;" data-widget-id="${w.id}">
       <div class="item-icon">${w.icon}</div>
       <div class="item-content">
-        <div class="item-title">${w.label}</div>
+        <div class="item-title">${I18n.t(w.labelKey)}</div>
       </div>
       <div class="item-right"><span class="toggle-indicator" style="font-size:20px;">${settings[w.id] ? '✅' : '☐'}</span></div>
     </div>
@@ -130,11 +157,11 @@ function showCustomizeModal() {
 
   App.showModal(`
     <div class="modal-header">
-      <h3>Personalizar Dashboard</h3>
+      <h3>${I18n.t('modal.customizeDashboard')}</h3>
       <button class="modal-close" onclick="App.hideModal()">✕</button>
     </div>
     <div style="padding:8px 0;">
-      <div style="font-size:13px;color:var(--text-secondary);margin-bottom:8px;padding:0 16px;">Selecciona qué secciones mostrar:</div>
+      <div style="font-size:13px;color:var(--text-secondary);margin-bottom:8px;padding:0 16px;">${I18n.t('modal.selectSections')}</div>
       ${itemsHtml}
     </div>
   `);
@@ -169,13 +196,14 @@ function showCustomizeModal() {
 }
 
 function generateMonthChips(year, currentMonth) {
+  const monthNames = I18n.t('month.short');
   let html = '';
   for (let i = 0; i < 12; i++) {
     const m = currentMonth - i;
     let y = year;
     let mo = m;
     if (mo <= 0) { mo += 12; y -= 1; }
-    const label = new Date(y, mo - 1, 1).toLocaleString('es', { month: 'short' });
+    const label = monthNames[mo - 1] || '';
     const active = (i === 0) ? 'active' : '';
     html += `<span class="chip ${active}" data-month="${y}-${String(mo).padStart(2,'0')}">${label} ${y}</span>`;
   }
@@ -198,7 +226,7 @@ async function loadHomeData(year, month) {
     if (isWidgetEnabled('dailyComparison')) renderDailyChart(daily);
     if (isWidgetEnabled('advancedStats')) renderAdvancedStats(advanced);
   } catch (err) {
-    App.showToast('Error al cargar datos: ' + err.message, 'error');
+    App.showToast(I18n.t('common.error') + ': ' + err.message, 'error');
   }
 }
 
@@ -216,12 +244,12 @@ function renderAdvancedStats(data) {
       <div class="stat-card">
         <div class="stat-icon">📊</div>
         <div class="stat-value">${data.avgTicket.toFixed(2)}€</div>
-        <div class="stat-label">Ticket Promedio</div>
+        <div class="stat-label">${I18n.t('stats.averageTicket')}</div>
       </div>
       <div class="stat-card ${diff >= 0 ? 'success' : 'warning'}">
         <div class="stat-icon">${trend}</div>
         <div class="stat-value">${thisWeek.total.toFixed(2)}€</div>
-        <div class="stat-label">Esta semana (${diff}% vs anterior)</div>
+        <div class="stat-label">${I18n.t('stats.thisWeek', { diff })}</div>
       </div>
     </div>
   `;
@@ -234,7 +262,7 @@ function renderAdvancedStats(data) {
     if (canvas) {
       const ctx = canvas.getContext('2d');
       if (homeCharts.monthlyTrend) { try { homeCharts.monthlyTrend.destroy(); } catch {} }
-      const monthNames = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+      const monthNames = I18n.t('month.short');
       homeCharts.monthlyTrend = new Chart(ctx, {
         type: 'line',
         data: {
@@ -243,7 +271,7 @@ function renderAdvancedStats(data) {
             return `${monthNames[parseInt(m)-1]} ${y}`;
           }),
           datasets: [{
-            label: 'Ingresos',
+            label: I18n.t('chart.income'),
             data: data.monthlyTrends.map(d => d.total),
             borderColor: '#0381fe',
             backgroundColor: 'rgba(3, 129, 254, 0.1)',
@@ -279,7 +307,7 @@ function renderAdvancedStats(data) {
         <div class="sale-item">
           <div class="sale-info">
             <div class="sale-name">${s.name}</div>
-            <div class="sale-meta">${s.items} productos · ${pct}% del total</div>
+            <div class="sale-meta">${s.items} ${I18n.t('sales.items')} · ${I18n.t('sales.percentOfTotal', { pct })}</div>
           </div>
           <div class="sale-price">${s.total.toFixed(2)}€</div>
         </div>
@@ -294,22 +322,22 @@ function renderHomeStats(overview) {
     <div class="stat-card primary">
       <div class="stat-icon">💰</div>
       <div class="stat-value">${overview.totalSales.toFixed(2)}€</div>
-      <div class="stat-label">Ventas Totales</div>
+      <div class="stat-label">${I18n.t('stats.totalSales')}</div>
     </div>
     <div class="stat-card success">
       <div class="stat-icon">📦</div>
       <div class="stat-value">${overview.totalItems}</div>
-      <div class="stat-label">Productos Vendidos</div>
+      <div class="stat-label">${I18n.t('stats.totalItems')}</div>
     </div>
     <div class="stat-card warning">
       <div class="stat-icon">📋</div>
       <div class="stat-value">${overview.totalSessions}</div>
-      <div class="stat-label">Sesiones</div>
+      <div class="stat-label">${I18n.t('stats.sessions')}</div>
     </div>
     <div class="stat-card">
       <div class="stat-icon">🏢</div>
       <div class="stat-value">${overview.companies}</div>
-      <div class="stat-label">Empresas</div>
+      <div class="stat-label">${I18n.t('stats.companies')}</div>
     </div>
   `;
 }
@@ -320,7 +348,7 @@ function renderMonthlyChart(data) {
   const ctx = canvas.getContext('2d');
 
   if (!data.dailySales || data.dailySales.length === 0) {
-    canvas.parentElement.innerHTML = '<p style="text-align:center;padding:20px;color:var(--text-secondary)">No hay datos este mes</p>';
+    canvas.parentElement.innerHTML = `<p style="text-align:center;padding:20px;color:var(--text-secondary)">${I18n.t('noData.month')}</p>`;
     return;
   }
 
@@ -332,7 +360,7 @@ function renderMonthlyChart(data) {
         return `${dt.getDate()} ${dt.toLocaleString('es',{month:'short'})}`;
       }),
       datasets: [{
-        label: 'Ingresos (€)',
+        label: I18n.t('chart.income') + ' (€)',
         data: data.dailySales.map(d => d.amount),
         backgroundColor: 'rgba(18, 89, 243, 0.7)',
         borderColor: 'rgba(18, 89, 243, 1)',
@@ -365,7 +393,7 @@ function renderTopProductsChart(data) {
   const ctx = canvas.getContext('2d');
 
   if (!data || data.length === 0) {
-    canvas.parentElement.innerHTML = '<p style="text-align:center;padding:20px;color:var(--text-secondary)">Aún no hay productos</p>';
+    canvas.parentElement.innerHTML = `<p style="text-align:center;padding:20px;color:var(--text-secondary)">${I18n.t('noData.products')}</p>`;
     return;
   }
 
@@ -402,7 +430,7 @@ function renderDailyChart(data) {
   const ctx = canvas.getContext('2d');
 
   if (!data || data.length === 0) {
-    canvas.parentElement.innerHTML = '<p style="text-align:center;padding:20px;color:var(--text-secondary)">No hay sesiones registradas</p>';
+    canvas.parentElement.innerHTML = `<p style="text-align:center;padding:20px;color:var(--text-secondary)">${I18n.t('noData.sessions')}</p>`;
     return;
   }
 
@@ -416,7 +444,7 @@ function renderDailyChart(data) {
         return `${dt.getDate()}/${dt.getMonth()+1}`;
       }),
       datasets: [{
-        label: 'Total (€)',
+        label: I18n.t('chart.totalEuro'),
         data: recent.map(d => d.total_amount),
         borderColor: '#10b981',
         backgroundColor: 'rgba(16, 185, 129, 0.1)',
