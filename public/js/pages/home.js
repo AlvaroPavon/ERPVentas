@@ -271,16 +271,17 @@ function renderAdvancedStats(data) {
   const container = document.getElementById('advanced-stats');
   if (!container) return;
 
-  const thisWeek = data.thisWeek;
-  const lastWeek = data.lastWeek;
-  const diff = lastWeek.total > 0 ? ((thisWeek.total - lastWeek.total) / lastWeek.total * 100).toFixed(1) : 0;
+  const thisWeek = data.thisWeek || { total: 0, sessions: 0, items: 0 };
+  const lastWeek = data.lastWeek || { total: 0, sessions: 0, items: 0 };
+  const avgTicket = data.avgTicket || 0;
+  const diff = lastWeek.total > 0 ? parseFloat(((thisWeek.total - lastWeek.total) / lastWeek.total * 100).toFixed(1)) : 0;
   const trend = diff >= 0 ? '📈' : '📉';
 
   container.innerHTML = `
     <div class="stats-grid">
       <div class="stat-card">
         <div class="stat-icon">📊</div>
-        <div class="stat-value">${data.avgTicket.toFixed(2)}€</div>
+        <div class="stat-value">${avgTicket.toFixed(2)}€</div>
         <div class="stat-label">${I18n.t('stats.averageTicket')}</div>
       </div>
       <div class="stat-card ${diff >= 0 ? 'success' : 'warning'}">

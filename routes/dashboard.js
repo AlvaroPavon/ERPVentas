@@ -463,7 +463,7 @@ router.get('/advanced', (req, res) => {
           GROUP BY ss.id
         ) t
       `).get(companyId);
-      avgTicket = avgResult ? avgResult.avg_ticket : 0;
+      avgTicket = avgResult ? (avgResult.avg_ticket || 0) : 0;
     } else {
       // Weekly comparison
       const weekSales = db.prepare(`
@@ -522,7 +522,7 @@ router.get('/advanced', (req, res) => {
           GROUP BY ss.id
         ) t
       `).get(req.user.id);
-      avgTicket = avgResult ? avgResult.avg_ticket : 0;
+      avgTicket = avgResult ? (avgResult.avg_ticket || 0) : 0;
     }
 
     res.json({
