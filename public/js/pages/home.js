@@ -2,14 +2,6 @@ let homeCharts = {};
 let selectedCompanyId = null;
 let userCompanies = [];
 
-const LANGUAGES = [
-  { code: 'es', labelKey: 'language.es' },
-  { code: 'en', labelKey: 'language.en' },
-  { code: 'ca', labelKey: 'language.ca' },
-  { code: 'eu', labelKey: 'language.eu' },
-  { code: 'gl', labelKey: 'language.gl' },
-];
-
 const WIDGETS = [
   { id: 'stats', labelKey: 'widget.stats', icon: '💰', default: true },
   { id: 'monthly', labelKey: 'widget.monthly', icon: '📈', default: true },
@@ -75,10 +67,7 @@ async function renderHome(el) {
 
   el.innerHTML = `
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;" class="dashboard-toolbar">
-      <div class="lang-selector">
-        <select id="lang-select" class="lang-select" style="font-size:12px;padding:4px 8px;border-radius:6px;border:1px solid var(--border-color);background:var(--card-bg);color:var(--text-color);">
-          ${LANGUAGES.map(l => `<option value="${l.code}" ${l.code === I18n.currentLang ? 'selected' : ''}>${I18n.t(l.labelKey)}</option>`).join('')}
-        </select>
+      <div style="display:flex;align-items:center;gap:8px;">
         ${companySelectorHtml}
       </div>
       <button class="btn btn-ghost btn-sm" id="btn-customize-dashboard" style="font-size:12px;">⚙️ ${I18n.t('dashboard.customize')}</button>
@@ -93,8 +82,10 @@ async function renderHome(el) {
       </div>
     </div>
 
-    <div class="chip-group" id="month-selector">
-      ${generateMonthChips(year, month)}
+    <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center;" id="month-selector">
+      <select id="month-picker" style="flex:1;font-size:14px;padding:8px 12px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--bg-card);color:var(--text-primary);">
+        ${generateMonthOptions(year, month)}
+      </select>
     </div>
 
     <div id="widget-monthly" ${!isWidgetEnabled('monthly') ? 'style="display:none;"' : ''}>
@@ -143,34 +134,13 @@ async function renderHome(el) {
 
   loadHomeData(year, month, selectedCompanyId);
 
-  document.getElementById('month-selector')?.addEventListener('click', (e) => {
-    const chip = e.target.closest('.chip');
-    if (!chip) return;
-    document.querySelectorAll('#month-selector .chip').forEach(c => c.classList.remove('active'));
-    chip.classList.add('active');
-    const [y, m] = chip.dataset.month.split('-');
+  document.getElementById('month-picker')?.addEventListener('change', (e) => {
+    const [y, m] = e.target.value.split('-');
     destroyHomeCharts();
     loadHomeData(parseInt(y), parseInt(m), selectedCompanyId);
   });
 
   document.getElementById('btn-customize-dashboard')?.addEventListener('click', showCustomizeModal);
-
-  document.getElementById('lang-select')?.addEventListener('change', async (e) => {
-    const lang = e.target.value;
-    if (typeof I18n?.load !== 'function') {
-      window.I18n = { translations: {}, currentLang: 'es', fallbackLang: 'es', t: k => k, load: async () => {} };
-    }
-    await I18n.load(lang);
-    try {
-      await API.updateLanguage(lang);
-    } catch (err) {
-      console.error('Failed to save language preference:', err);
-    }
-    // Re-render home with new language
-    const pageContent = document.getElementById(Router.containerId);
-    destroyHomeCharts();
-    renderHome(pageContent);
-  });
 
   // Company selector change handler
   document.getElementById('company-select')?.addEventListener('change', (e) => {
@@ -232,19 +202,19 @@ function showCustomizeModal() {
   }
 }
 
-function generateMonthChips(year, currentMonth) {
+function generateMonthOptions(year, currentMonth) {
   const monthNames = I18n.t('month.short');
-  let html = '';
+  let opts = '';
   for (let i = 0; i < 12; i++) {
     const m = currentMonth - i;
     let y = year;
     let mo = m;
     if (mo <= 0) { mo += 12; y -= 1; }
     const label = monthNames[mo - 1] || '';
-    const active = (i === 0) ? 'active' : '';
-    html += `<span class="chip ${active}" data-month="${y}-${String(mo).padStart(2,'0')}">${label} ${y}</span>`;
+    const selected = (i === 0) ? 'selected' : '';
+    opts += `<option value="${y}-${String(mo).padStart(2,'0')}" ${selected}>${label} ${y}</option>`;
   }
-  return html;
+  return opts;
 }
 
 async function loadHomeData(year, month, companyId) {

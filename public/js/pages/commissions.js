@@ -53,14 +53,14 @@ async function renderCommissions(el, params) {
       <div style="flex:1;text-align:center;font-weight:600;">${companyName}</div>
     </div>
 
-    <div class="section-title">⚙️ Configuración de Comisiones</div>
+    <div class="section-title">⚙️ I18n.t('page.commissions.config')</div>
     <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;">
-      Porcentaje de comisión sobre ventas cerradas por cada rol.
+      I18n.t('page.commissions.percentage') de comisión sobre ventas cerradas por cada rol.
       El propietario no recibe comisión automática.
     </div>
     <div id="commission-config"></div>
 
-    <div class="section-title" style="margin-top:20px;">📊 Resumen de Comisiones</div>
+    <div class="section-title" style="margin-top:20px;">📊 I18n.t('page.commissions.summary')</div>
     <div id="commission-summary">
       <div style="text-align:center;padding:20px;"><div class="spinner"></div></div>
     </div>
@@ -112,7 +112,7 @@ async function saveCommission(companyId, role) {
   const pct = parseFloat(input.value);
 
   if (isNaN(pct) || pct < 0 || pct > 100) {
-    App.showToast('Porcentaje inválido (0-100)', 'error');
+    App.showToast('I18n.t('page.commissions.percentage') inválido (0-100)', 'error');
     return;
   }
 

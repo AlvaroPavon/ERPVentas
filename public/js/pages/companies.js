@@ -4,10 +4,10 @@ async function renderCompanies(el) {
   el.innerHTML = `
     <div class="search-bar">
       <span class="search-icon">🔍</span>
-      <input type="text" id="search-companies" placeholder="Buscar empresas...">
+      <input type="text" id="search-companies" placeholder="I18n.t('page.companies.search')">
     </div>
     <div class="quick-actions">
-      <button class="btn btn-primary" id="btn-create-company">+ Crear Empresa</button>
+      <button class="btn btn-primary" id="btn-create-company">+ I18n.t('page.companies.create')</button>
       <button class="btn btn-outline" id="btn-my-companies">Mis Empresas</button>
       <button class="btn btn-outline" id="btn-join-requests">📨 Solicitudes <span id="pending-badge" class="badge badge-danger" style="display:none;margin-left:4px;"></span></button>
     </div>
@@ -36,14 +36,14 @@ async function renderCompanies(el) {
       </div>
       <form id="form-create-company">
         <div class="input-group">
-          <label>Nombre de la empresa</label>
+          <label>I18n.t('page.companies.name')</label>
           <input type="text" id="company-name" placeholder="Ej: AlvaroPM" required>
         </div>
         <div class="input-group">
-          <label>Descripción (opcional)</label>
+          <label>I18n.t('page.companies.description')</label>
           <textarea id="company-desc" placeholder="Describe tu empresa..."></textarea>
         </div>
-        <button type="submit" class="btn btn-primary btn-block">Crear Empresa</button>
+        <button type="submit" class="btn btn-primary btn-block">I18n.t('page.companies.create')</button>
       </form>
     `);
 
@@ -128,11 +128,11 @@ async function searchCompanies(q) {
   try {
     const companies = await API.searchCompanies(q);
     if (companies.length === 0) {
-      list.innerHTML = '<div class="list-empty"><div class="empty-icon">🔍</div><p>No se encontraron empresas</p></div>';
+      list.innerHTML = '<div class="list-empty"><div class="empty-icon">🔍</div><p>I18n.t('page.companies.noResults')</p></div>';
       return;
     }
 
-    document.querySelector('.section-title').textContent = `Resultados para "${q}"`;
+    document.querySelector('.section-title').textContent = `I18n.t('page.companies.resultsFor') "${q}"`;
 
     let html = '';
     companies.forEach(c => {

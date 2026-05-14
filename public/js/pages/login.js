@@ -35,11 +35,7 @@ function renderLogin(el) {
       const data = await API.login(email, password);
       API.setToken(data.token);
       App.user = data.user;
-      const lang = data.user.language || 'es';
-      if (typeof I18n?.load !== 'function') {
-        console.warn('I18n not loaded, creating inline fallback');
-        window.I18n = { translations: {}, currentLang: 'es', fallbackLang: 'es', t: k => k, load: async () => {} };
-      }
+      const lang = data.user.language || App.detectLanguage();
       await I18n.load(lang);
       App.showMainApp();
       document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));

@@ -26,7 +26,7 @@ async function loadActivityPage(page) {
     const data = await API.getActivity(page);
 
     if (data.logs.length === 0) {
-      list.innerHTML = '<div class="list-empty"><div class="empty-icon">📄</div><p>No hay actividad registrada aún</p></div>';
+      list.innerHTML = '<div class="list-empty"><div class="empty-icon">📄</div><p>I18n.t('page.activity.noActivity') aún</p></div>';
       pagination.innerHTML = '';
       return;
     }

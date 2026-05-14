@@ -12,9 +12,9 @@ async function renderSales(el) {
 
   el.innerHTML = `
     <div id="sales-selector">
-      <div class="section-title">Seleccionar Sesión</div>
+      <div class="section-title">${I18n.t('page.sales.selectCompany')}</div>
       <div id="sales-sessions-list"></div>
-      <button class="btn btn-primary" id="btn-new-session">+ Nueva Sesión de Venta</button>
+      <button class="btn btn-primary" id="btn-new-session">+ ${I18n.t('page.sales.startSession')}</button>
     </div>
     <div id="sales-active" style="display:none;"></div>
   `;
@@ -24,27 +24,27 @@ async function renderSales(el) {
   document.getElementById('btn-new-session')?.addEventListener('click', () => {
     App.showModal(`
       <div class="modal-header">
-        <h3>Nueva Sesión de Venta</h3>
+        <h3>I18n.t('page.sales.startSession')</h3>
         <button class="modal-close" onclick="App.hideModal()">✕</button>
       </div>
       <form id="form-new-session">
         <div class="input-group">
-          <label>Empresa</label>
+          <label>I18n.t('page.sales.selectCompany')</label>
           <select id="session-company" required></select>
         </div>
         <div class="input-group">
-          <label>Nombre de la sesión</label>
-          <input type="text" id="session-name" placeholder="Ej: Ventas Cigüela 2026" required>
+          <label>I18n.t('page.sales.sessionName')</label>
+          <input type="text" id="session-name" placeholder="I18n.t('page.sales.enterSessionName')" required>
         </div>
         <div class="input-group">
-          <label>Fecha</label>
+          <label>I18n.t('page.sales.sessionDate')</label>
           <input type="date" id="session-date" required>
         </div>
         <div class="input-group">
-          <label>Notas (opcional)</label>
+          <label>I18n.t('page.sales.notes')</label>
           <textarea id="session-notes" placeholder="Notas del día..."></textarea>
         </div>
-        <button type="submit" class="btn btn-primary btn-block">Crear Sesión</button>
+        <button type="submit" class="btn btn-primary btn-block">I18n.t('page.sales.createSession')</button>
       </form>
     `);
 
@@ -67,7 +67,7 @@ async function renderSales(el) {
       try {
         const session = await API.createSession(company_id, name, session_date, notes);
         App.hideModal();
-        App.showToast('Sesión creada correctamente', 'success');
+        App.showToast('I18n.t('page.sales.sessionClosed')', 'success');
         enterSaleSession(session);
       } catch (err) {
         App.showToast(err.message, 'error');
@@ -81,7 +81,7 @@ async function loadSaleSessions() {
   try {
     const sessions = await API.getSessions();
     if (sessions.length === 0) {
-      list.innerHTML = '<div class="list-empty"><div class="empty-icon">📋</div><p>No hay sesiones aún. Crea una nueva.</p></div>';
+      list.innerHTML = '<div class="list-empty"><div class="empty-icon">📋</div><p>I18n.t('page.sales.noSession')</p></div>';
       return;
     }
 
@@ -165,18 +165,18 @@ function enterSaleSession(session, sales = [], summary = null) {
     </div>
 
     <div class="session-total" id="sale-grand-total">
-      <div class="total-label">Total Ventas</div>
+      <div class="total-label">I18n.t('page.sales.total') Ventas</div>
       <div class="total-value" id="sale-total-display">0.00€</div>
     </div>
 
-    <div class="section-title">Añadir producto</div>
+    <div class="section-title">I18n.t('page.sales.addProduct') producto</div>
     <div class="sell-entry">
       <input type="text" id="sale-product" placeholder="Producto" autocomplete="off" list="product-suggestions">
       <datalist id="product-suggestions"></datalist>
-      <button type="button" id="btn-scan-barcode" style="background:none;border:none;font-size:20px;cursor:pointer;padding:8px;border-radius:var(--radius-full);" title="Escanear código de barras">📸</button>
+      <button type="button" id="btn-scan-barcode" style="background:none;border:none;font-size:20px;cursor:pointer;padding:8px;border-radius:var(--radius-full);" title="I18n.t('page.sales.scanBarcode') de barras">📸</button>
       <input type="number" id="sale-qty" placeholder="Cant" value="1" min="1" step="1" style="max-width:70px;">
-      <input type="number" id="sale-price" placeholder="Precio" step="0.01" min="0" style="max-width:100px;">
-      <button type="button" id="btn-sale-image" style="background:none;border:none;font-size:20px;cursor:pointer;padding:4px;" title="Añadir foto">📷</button>
+      <input type="number" id="sale-price" placeholder="I18n.t('page.sales.price')" step="0.01" min="0" style="max-width:100px;">
+      <button type="button" id="btn-sale-image" style="background:none;border:none;font-size:20px;cursor:pointer;padding:4px;" title="I18n.t('page.sales.addProduct') foto">📷</button>
       <button id="btn-add-sale">➕</button>
     </div>
     <div id="price-tiers-selector" style="display:none;margin-bottom:8px;">
@@ -203,7 +203,7 @@ function enterSaleSession(session, sales = [], summary = null) {
   `;
 
   renderSalesList();
-  updateTotal();
+  updateI18n.t('page.sales.total')();
 
   // Load catalog products for autocomplete
   loadCatalogProducts(session.company_id);
@@ -253,7 +253,7 @@ function enterSaleSession(session, sales = [], summary = null) {
     }
 
     if (!('BarcodeDetector' in window)) {
-      App.showToast('Escáner no disponible en este navegador', 'warning');
+      App.showToast('I18n.t('page.sales.error') + ': escáner no disponible'', 'warning');
       return;
     }
 
@@ -278,7 +278,7 @@ function enterSaleSession(session, sales = [], summary = null) {
             document.getElementById('sale-product').value = match ? match.name : code;
             if (match) document.getElementById('sale-price').value = match.price.toFixed(2);
             document.getElementById('sale-qty').focus();
-            App.showToast(`Código: ${code}`, 'success');
+            App.showToast(`I18n.t('page.sales.code'): ${code}`, 'success');
             return;
           }
         } catch (e) {}
@@ -313,7 +313,7 @@ async function addSaleItem() {
   const price = document.getElementById('sale-price').value;
 
   if (!product || !price) {
-    App.showToast('Introduce producto y precio', 'warning');
+    App.showToast('I18n.t('page.sales.error')', 'warning');
     return;
   }
 
@@ -321,7 +321,7 @@ async function addSaleItem() {
     const sale = await API.addSaleItem(currentSaleSession.id, product, parseFloat(price), qty, pendingImageData);
     currentSales.push(sale);
     renderSalesList();
-    updateTotal();
+    updateI18n.t('page.sales.total')();
     document.getElementById('sale-product').value = '';
     document.getElementById('sale-qty').value = '1';
     document.getElementById('sale-price').value = '';
@@ -340,7 +340,7 @@ async function loadCatalogProducts(companyId) {
     const datalist = document.getElementById('product-suggestions');
     if (!datalist) return;
     datalist.innerHTML = catalogProducts.map(p =>
-      `<option value="${p.name}" data-price="${p.price}">${p.price.toFixed(2)}€${p.prices && p.prices.length > 0 ? ' +variantes' : ''}</option>`
+      `<option value="${p.name}" data-price="${p.price}">${p.price.toFixed(2)}€${p.prices && p.prices.length > 0 ? ' +I18n.t('page.sales.variants')' : ''}</option>`
     ).join('');
 
     // Autofill price when product is selected from datalist
@@ -395,7 +395,7 @@ function renderSalesList() {
   if (!list) return;
 
   if (currentSales.length === 0) {
-    list.innerHTML = '<div class="list-empty"><div class="empty-icon">🛒</div><p>Aún no has vendido nada hoy</p></div>';
+    list.innerHTML = '<div class="list-empty"><div class="empty-icon">🛒</div><p>I18n.t('page.sales.noProducts')</p></div>';
     return;
   }
 
@@ -460,7 +460,7 @@ function renderSalesList() {
       e.stopPropagation();
       const sale = currentSales.find(s => s.id === parseInt(btn.dataset.id));
       if (!sale) return;
-      const newPrice = prompt('Precio unitario (€):', sale.price);
+      const newPrice = prompt('I18n.t('page.sales.price') unitario (€):', sale.price);
       if (newPrice && parseFloat(newPrice) !== sale.price && parseFloat(newPrice) >= 0) {
         editSaleItem(sale.id, { price: parseFloat(newPrice) });
       }
@@ -475,7 +475,7 @@ function renderSalesList() {
         await API.deleteSaleItem(btn.dataset.id);
         currentSales = currentSales.filter(s => s.id !== parseInt(btn.dataset.id));
         renderSalesList();
-        updateTotal();
+        updateI18n.t('page.sales.total')();
       } catch (err) {
         App.showToast(err.message, 'error');
       }
@@ -489,14 +489,14 @@ async function editSaleItem(id, data) {
     const idx = currentSales.findIndex(s => s.id === id);
     if (idx !== -1) currentSales[idx] = updated;
     renderSalesList();
-    updateTotal();
+    updateI18n.t('page.sales.total')();
     App.showToast('Venta actualizada', 'success');
   } catch (err) {
     App.showToast(err.message, 'error');
   }
 }
 
-function updateTotal() {
+function updateI18n.t('page.sales.total')() {
   const display = document.getElementById('sale-total-display');
   if (!display) return;
   const total = currentSales.reduce((sum, s) => sum + (s.price * s.quantity), 0);
@@ -537,10 +537,10 @@ async function generateSalePDF() {
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
     const date = new Date(currentSaleSession.session_date).toLocaleDateString('es');
-    doc.text(`Fecha: ${date}`, pageWidth / 2, 28, { align: 'center' });
+    doc.text(`I18n.t('page.sales.sessionDate'): ${date}`, pageWidth / 2, 28, { align: 'center' });
 
     if (currentSaleSession.company_name) {
-      doc.text(`Empresa: ${currentSaleSession.company_name}`, pageWidth / 2, 34, { align: 'center' });
+      doc.text(`I18n.t('page.sales.selectCompany'): ${currentSaleSession.company_name}`, pageWidth / 2, 34, { align: 'center' });
     }
 
     // Table
@@ -556,9 +556,9 @@ async function generateSalePDF() {
 
     doc.autoTable({
       startY: 40,
-      head: [['Producto', 'Cant', 'Precio', 'Total', 'Vendedor']],
+      head: [['Producto', 'Cant', I18n.t('page.sales.price'), I18n.t('page.sales.total'), I18n.t('page.sales.seller')]],
       body: tableData,
-      foot: [['', '', '', `Total: ${total.toFixed(2)}€`, '']],
+      foot: [['', '', '', `I18n.t('page.sales.total'): ${total.toFixed(2)}€`, '']],
       theme: 'grid',
       headStyles: { fillColor: [18, 89, 243], textColor: 255, fontStyle: 'bold' },
       footStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0], fontStyle: 'bold' },
@@ -581,7 +581,7 @@ async function generateSalePDF() {
 
     let y = finalY + 8;
     doc.setFont('helvetica', 'bold');
-    doc.text(`Total General: ${total.toFixed(2)}€`, 14, y);
+    doc.text(`I18n.t('page.sales.total') General: ${total.toFixed(2)}€`, 14, y);
     y += 7;
     doc.setFont('helvetica', 'normal');
     doc.text(`Productos vendidos: ${currentSales.length}`, 14, y);

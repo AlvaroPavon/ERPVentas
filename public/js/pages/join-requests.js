@@ -9,14 +9,14 @@ async function renderJoinRequests(el) {
   let html = '';
 
   // Sent requests
-  html += '<div class="section-title">Solicitudes Enviadas</div>';
+  html += '<div class="section-title">Solicitudes I18n.t('page.joinRequests.sent')</div>';
   if (sent.length === 0) {
     html += '<div class="list-empty"><div class="empty-icon">📨</div><p>No has enviado ninguna solicitud</p></div>';
   } else {
     sent.forEach(r => {
       const statusIcon = r.status === 'accepted' ? '✅' : r.status === 'rejected' ? '❌' : '⏳';
       const statusBadge = r.status === 'accepted' ? 'badge-success' : r.status === 'rejected' ? 'badge-danger' : 'badge-warning';
-      const statusLabel = r.status === 'accepted' ? 'Aceptada' : r.status === 'rejected' ? 'Rechazada' : 'Pendiente';
+      const statusLabel = r.status === 'accepted' ? I18n.t('page.joinRequests.accepted') : r.status === 'rejected' ? I18n.t('page.joinRequests.rejected') : 'Pendiente';
       const date = new Date(r.created_at).toLocaleDateString('es');
       html += `
         <div class="list-item join-request-item" data-company-id="${r.company_id}" style="cursor:pointer;">
@@ -33,10 +33,10 @@ async function renderJoinRequests(el) {
 
   // Received requests (for companies where user is admin/owner)
   if (received.length > 0) {
-    html += '<div class="section-title" style="margin-top:16px;">Solicitudes Recibidas</div>';
+    html += '<div class="section-title" style="margin-top:16px;">I18n.t('page.joinRequests.received')</div>';
     received.forEach(r => {
       const date = new Date(r.created_at).toLocaleDateString('es');
-      const statusLabel = r.status === 'accepted' ? 'Aceptada' : r.status === 'rejected' ? 'Rechazada' : 'Pendiente';
+      const statusLabel = r.status === 'accepted' ? I18n.t('page.joinRequests.accepted') : r.status === 'rejected' ? I18n.t('page.joinRequests.rejected') : 'Pendiente';
       const statusBadge = r.status === 'accepted' ? 'badge-success' : r.status === 'rejected' ? 'badge-danger' : 'badge-warning';
       const avatarHtml = r.user_avatar
         ? `<img src="${r.user_avatar}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;">`

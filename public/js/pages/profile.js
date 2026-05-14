@@ -63,6 +63,16 @@ async function renderProfile(el) {
       `).join('')}
     </div>
 
+    <div class="section-title" style="margin-top:20px;">Idioma</div>
+    <div class="list-item" style="cursor:pointer;" id="btn-lang">
+      <div class="item-icon">🌐</div>
+      <div class="item-content">
+        <div class="item-title" id="lang-current-label">${I18n.t('language.' + I18n.currentLang)}</div>
+        <div class="item-subtitle">${I18n.t('language.name')}</div>
+      </div>
+      <div class="item-right"><span style="font-size:18px;">›</span></div>
+    </div>
+
     <div class="section-title" style="margin-top:20px;">Notificaciones</div>
     <div class="list-item" id="btn-toggle-push" style="cursor:pointer;">
       <div class="item-icon">🔔</div>
@@ -246,6 +256,38 @@ async function renderProfile(el) {
       const isActive = id === App.accentColor;
       el.style.borderColor = isActive ? (App.ACCENTS.find(a => a.id === id)?.color || '#0381fe') : 'var(--border)';
       el.classList.toggle('active', isActive);
+    });
+  });
+
+  // Language picker
+  document.getElementById('btn-lang')?.addEventListener('click', () => {
+    const langs = [{c:'es',n:'Español'},{c:'en',n:'English'},{c:'ca',n:'Català'},{c:'eu',n:'Euskara'},{c:'gl',n:'Galego'}];
+    App.showModal(`
+      <div class="modal-header">
+        <h3>Idioma</h3>
+        <button class="modal-close" onclick="App.hideModal()">✕</button>
+      </div>
+      <div style="padding:8px 0;">
+        ${langs.map(l => `
+          <div class="list-item lang-option" data-lang="${l.c}" style="cursor:pointer;${I18n.currentLang === l.c ? 'background:var(--primary-bg);' : ''}">
+            <div class="item-icon">${l.c === 'es' ? '🇪🇸' : l.c === 'en' ? '🇬🇧' : l.c === 'ca' ? '🏴' : l.c === 'eu' ? '🇪🇸' : '🇪🇸'}</div>
+            <div class="item-content">
+              <div class="item-title">${l.n}</div>
+            </div>
+            <div class="item-right">${I18n.currentLang === l.c ? '✅' : ''}</div>
+          </div>
+        `).join('')}
+      </div>
+    `);
+    document.querySelectorAll('.lang-option').forEach(el => {
+      el.addEventListener('click', async () => {
+        const lang = el.dataset.lang;
+        App.hideModal();
+        App.setLanguage(lang);
+        API.updateLanguage(lang).catch(function(){});
+        const pageContent = document.getElementById(Router.containerId);
+        renderProfile(pageContent);
+      });
     });
   });
 

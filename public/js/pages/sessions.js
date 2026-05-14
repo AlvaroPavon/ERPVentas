@@ -12,13 +12,13 @@ async function renderSessions(el) {
       <input type="date" id="filter-date-from" value="${fromDefault}" style="flex:1;border:none;background:transparent;font-size:14px;outline:none;">
       <span style="padding:0 4px;color:var(--text-muted);">→</span>
       <input type="date" id="filter-date-to" value="${today}" style="flex:1;border:none;background:transparent;font-size:14px;outline:none;">
-      <button id="btn-clear-date-filter" class="btn btn-ghost btn-sm" style="padding:4px 8px;" title="Limpiar filtro">✕</button>
+      <button id="btn-clear-date-filter" class="btn btn-ghost btn-sm" style="padding:4px 8px;" title="I18n.t('page.sessions.clear') filtro">✕</button>
     </div>
     <div class="search-bar" style="margin-bottom:8px;">
       <span class="search-icon">🔍</span>
       <input type="text" id="filter-search-session" placeholder="Buscar por nombre..." style="flex:1;border:none;background:transparent;font-size:14px;outline:none;">
     </div>
-    <div class="section-title">Historial de Sesiones</div>
+    <div class="section-title">I18n.t('page.sessions.history')</div>
     <div id="sessions-list"></div>
   `;
 
@@ -64,7 +64,7 @@ async function loadSessions(from, to) {
       return;
     }
 
-    document.querySelector('.section-title').textContent = `Historial de Sesiones (${sessions.length})`;
+    document.querySelector('.section-title').textContent = `I18n.t('page.sessions.history') (${sessions.length})`;
 
     let html = '';
     sessions.forEach(s => {
@@ -78,7 +78,7 @@ async function loadSessions(from, to) {
           <div class="item-icon">${s.is_closed ? '✅' : '📋'}</div>
           <div class="item-content">
             <div class="item-title">${s.name} ${status} ${notesIcon}</div>
-            <div class="item-subtitle">${date} · ${s.company_name} · ${s.item_count} productos</div>
+            <div class="item-subtitle">${date} · ${s.company_name} · ${s.item_count} I18n.t('page.sessions.items')</div>
           </div>
           <div class="item-right">
             <div class="item-amount">${s.total_amount.toFixed(2)}€</div>
@@ -154,7 +154,7 @@ async function showSessionDetail(sessionId) {
             <div class="item-icon">👤</div>
             <div class="item-content">
               <div class="item-title">${bs.name}</div>
-              <div class="item-subtitle">${bs.items} productos</div>
+              <div class="item-subtitle">${bs.items} I18n.t('page.sessions.items')</div>
             </div>
             <div class="item-right"><div class="item-amount">${bs.total.toFixed(2)}€</div></div>
           </div>
@@ -165,7 +165,7 @@ async function showSessionDetail(sessionId) {
     html += '<div class="section-title">Productos vendidos</div>';
 
     if (data.sales.length === 0) {
-      html += '<div class="list-empty"><div class="empty-icon">🛒</div><p>No hay productos en esta sesión</p></div>';
+      html += '<div class="list-empty"><div class="empty-icon">🛒</div><p>No hay I18n.t('page.sessions.items') en esta sesión</p></div>';
     } else {
       data.sales.forEach(sale => {
         const imgHtml = sale.image_url ? `<img src="${sale.image_url}" style="width:36px;height:36px;border-radius:var(--radius-sm);object-fit:cover;margin-right:8px;flex-shrink:0;">` : '';

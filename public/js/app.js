@@ -106,6 +106,24 @@ const App = {
     this.accentListeners.push(fn);
   },
 
+  // ===== Language =====
+
+  detectLanguage() {
+    const supported = { es: 'es', en: 'en', ca: 'ca', eu: 'eu', gl: 'gl' };
+    const saved = localStorage.getItem('lang');
+    if (saved && supported[saved]) return saved;
+    const navLang = (navigator.language || '').split('-')[0];
+    return supported[navLang] || 'es';
+  },
+
+  setLanguage(lang) {
+    if (!['es','en','ca','eu','gl'].includes(lang)) return;
+    localStorage.setItem('lang', lang);
+    I18n.load(lang).then(function() {
+      App.updateNavLabels();
+    });
+  },
+
   notifyAccentListeners() {
     this.accentListeners.forEach(fn => fn(this.accentColor, this.themeMode, this.darkMode));
   },
@@ -212,10 +230,9 @@ const App = {
       try {
         const user = await API.me();
         this.user = user;
-        const lang = user.language || 'es';
-        if (typeof I18n?.load !== 'function') {
-          console.warn('I18n not loaded, creating inline fallback');
-          window.I18n = { translations: {}, currentLang: 'es', fallbackLang: 'es', t: k => k, load: async () => {} };
+        const lang = user.language || App.detectLanguage();
+        if (lang !== user.language) {
+          API.updateLanguage(lang).catch(function(){});
         }
         await I18n.load(lang);
         this.showMainApp();

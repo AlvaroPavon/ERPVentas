@@ -64,8 +64,8 @@ async function loadInventory(companyId) {
       let alertHtml = '<div style="font-size:12px;color:var(--warning);margin-bottom:8px;padding:8px 12px;background:var(--warning-bg);border-radius:var(--radius-sm);">';
       alertHtml += '⚠️ ';
       const alerts = [];
-      if (outOfStock.length > 0) alerts.push(`${outOfStock.length} productos sin stock`);
-      if (lowStock.length > 0) alerts.push(`${lowStock.length} productos con stock bajo`);
+      if (outOfStock.length > 0) alerts.push(`${outOfStock.length} I18n.t('page.inventory.noStock')`);
+      if (lowStock.length > 0) alerts.push(`${lowStock.length} I18n.t('page.inventory.lowStock')`);
       alertHtml += alerts.join(' · ');
       alertHtml += '</div>';
       alertsEl.innerHTML = alertHtml;
@@ -112,7 +112,7 @@ function quickStockAction(companyId, productId, action) {
   const qty = prompt(action === 'add' ? 'Cantidad a añadir:' : 'Cantidad a retirar:');
   if (!qty || parseInt(qty) <= 0) return;
 
-  const notes = prompt('Notas (opcional):') || '';
+  const notes = prompt('I18n.t('page.inventory.notes') (opcional):') || '';
 
   if (action === 'add') {
     API.addStock(companyId, productId, parseInt(qty), notes).then(() => {

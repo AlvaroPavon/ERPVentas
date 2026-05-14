@@ -50,15 +50,15 @@ async function renderCompanyDetail(el, params) {
     // Add user (admin only)
     if (isAdmin) {
       html += `
-        <button class="btn btn-primary" id="btn-add-user" style="margin-bottom:12px;">+ Añadir Usuario</button>
+        <button class="btn btn-primary" id="btn-add-user" style="margin-bottom:12px;">+ I18n.t('page.company.addUser')</button>
       `;
     }
 
-    // Role management (owner only)
+    // I18n.t('page.company.role')e management (owner only)
     const myMembership = company.users.find(u => u.id === App.user.id);
     if (myMembership && myMembership.role === 'owner') {
       html += `
-        <div class="section-title">Roles y Permisos</div>
+        <div class="section-title">I18n.t('page.company.role')es y Permisos</div>
         <div id="role-management">
           <div style="text-align:center;padding:8px;"><div class="spinner"></div></div>
         </div>
@@ -66,9 +66,9 @@ async function renderCompanyDetail(el, params) {
     }
 
     // Sessions
-    html += '<div class="section-title">Sesiones de Venta</div>';
+    html += '<div class="section-title">I18n.t('page.company.totalSessions') de Venta</div>';
     if (company.sessions.length === 0) {
-      html += '<div class="list-empty"><div class="empty-icon">📋</div><p>No hay sesiones registradas</p></div>';
+      html += '<div class="list-empty"><div class="empty-icon">📋</div><p>I18n.t('page.company.noSessions') registradas</p></div>';
     } else {
       company.sessions.forEach(s => {
         const date = new Date(s.session_date).toLocaleDateString('es');
@@ -183,7 +183,7 @@ async function renderCompanyDetail(el, params) {
 
     // Load role management (owner only)
     if (myMembership && myMembership.role === 'owner') {
-      loadRoleManagement(companyId);
+      loadI18n.t('page.company.role')eManagement(companyId);
     }
 
     // Add product (admin only)
@@ -191,7 +191,7 @@ async function renderCompanyDetail(el, params) {
       document.getElementById('btn-add-product')?.addEventListener('click', () => {
         App.showModal(`
           <div class="modal-header">
-            <h3>Añadir Producto al Catálogo</h3>
+            <h3>I18n.t('page.company.add') Producto al Catálogo</h3>
             <button class="modal-close" onclick="App.hideModal()">✕</button>
           </div>
           <form id="form-add-product">
@@ -221,9 +221,9 @@ async function renderCompanyDetail(el, params) {
                   <input type="number" class="tier-qty" placeholder="Cant" value="1" min="1" style="width:65px;padding:6px 8px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;background:var(--surface);color:var(--text);">
                 </div>
               </div>
-              <button type="button" id="btn-add-tier" class="btn btn-sm btn-ghost" style="font-size:12px;padding:4px 8px;">+ Añadir variante</button>
+              <button type="button" id="btn-add-tier" class="btn btn-sm btn-ghost" style="font-size:12px;padding:4px 8px;">+ I18n.t('page.company.add') variante</button>
             </div>
-            <button type="submit" class="btn btn-primary btn-block" style="margin-top:12px;">Añadir Producto</button>
+            <button type="submit" class="btn btn-primary btn-block" style="margin-top:12px;">I18n.t('page.company.add') Producto</button>
           </form>
         `);
 
@@ -281,22 +281,22 @@ async function renderCompanyDetail(el, params) {
     document.getElementById('btn-add-user')?.addEventListener('click', () => {
       App.showModal(`
         <div class="modal-header">
-          <h3>Añadir Usuario</h3>
+          <h3>I18n.t('page.company.addUser')</h3>
           <button class="modal-close" onclick="App.hideModal()">✕</button>
         </div>
         <form id="form-add-user">
           <div class="input-group">
-            <label>Email del usuario</label>
+            <label>I18n.t('page.company.userEmail')</label>
             <input type="email" id="add-user-email" placeholder="usuario@email.com" required>
           </div>
           <div class="input-group">
-            <label>Rol</label>
+            <label>I18n.t('page.company.role')</label>
             <select id="add-user-role">
               <option value="member">Miembro</option>
               <option value="admin">Administrador</option>
             </select>
           </div>
-          <button type="submit" class="btn btn-primary btn-block">Añadir</button>
+          <button type="submit" class="btn btn-primary btn-block">I18n.t('page.company.add')</button>
         </form>
       `);
 
@@ -438,8 +438,8 @@ async function loadProducts(companyId, isAdmin) {
     if (products.length === 0) {
       section.innerHTML = `
         <div class="list-empty" style="padding:16px;">
-          <p style="font-size:13px;">No hay productos en el catálogo</p>
-          ${isAdmin ? '<button class="btn btn-sm btn-primary" id="btn-add-product" style="margin-top:8px;">+ Añadir Producto</button>' : ''}
+          <p style="font-size:13px;">I18n.t('page.company.noProducts') en el catálogo</p>
+          ${isAdmin ? '<button class="btn btn-sm btn-primary" id="btn-add-product" style="margin-top:8px;">+ I18n.t('page.company.add') Producto</button>' : ''}
         </div>
       `;
       return;
@@ -469,7 +469,7 @@ async function loadProducts(companyId, isAdmin) {
       `;
     });
     if (isAdmin) {
-      html += `<button class="btn btn-sm btn-primary" id="btn-add-product" style="margin-top:4px;">+ Añadir Producto</button>`;
+      html += `<button class="btn btn-sm btn-primary" id="btn-add-product" style="margin-top:4px;">+ I18n.t('page.company.add') Producto</button>`;
     }
     section.innerHTML = html;
   } catch (err) {
@@ -477,7 +477,7 @@ async function loadProducts(companyId, isAdmin) {
   }
 }
 
-async function loadRoleManagement(companyId) {
+async function loadI18n.t('page.company.role')eManagement(companyId) {
   const container = document.getElementById('role-management');
   if (!container) return;
 
@@ -490,7 +490,7 @@ const availablePerms = ['manage_members','manage_products','manage_sessions','ma
        manage_products: 'Gestionar productos',
        manage_sessions: 'Gestionar sesiones',
        manage_inventory: 'Gestionar inventario',
-       add_sales: 'Añadir ventas',
+       add_sales: 'I18n.t('page.company.add') ventas',
        delete_sales: 'Eliminar ventas',
        view_reports: 'Ver informes',
        view_commissions: 'Ver comisiones',
@@ -498,7 +498,7 @@ const availablePerms = ['manage_members','manage_products','manage_sessions','ma
      };
 
     let html = '';
-    data.allRoles.filter(r => r !== 'owner').forEach(role => {
+    data.allI18n.t('page.company.role')es.filter(r => r !== 'owner').forEach(role => {
       const perms = data.roles[role] || [];
       const roleLabel = { admin: 'Admin', member: 'Miembro', cashier: 'Cajero' }[role] || role;
       html += `
@@ -522,7 +522,7 @@ const availablePerms = ['manage_members','manage_products','manage_sessions','ma
           chip.classList.toggle('active');
           const perms = [...group.querySelectorAll('.chip.active')].map(c => c.dataset.perm);
           try {
-            await API.updateRolePermissions(companyId, role, perms);
+            await API.updateI18n.t('page.company.role')ePermissions(companyId, role, perms);
             App.showToast(`Permisos de "${role}" actualizados`, 'success');
           } catch (err) {
             chip.classList.toggle('active'); // revert
