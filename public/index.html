@@ -13,6 +13,36 @@
   <link rel="mask-icon" href="/icons/icon-192.svg" color="#0381fe">
   <title>Notas de Venta</title>
   <link rel="stylesheet" href="css/style.css">
+  <script>
+    window.I18n = window.I18n || {
+      translations: {},
+      currentLang: 'es',
+      fallbackLang: 'es',
+      load: async function(lang) {
+        this.currentLang = lang;
+        try {
+          var res = await fetch('/locales/' + lang + '.json');
+          if (!res.ok) throw new Error();
+          this.translations = await res.json();
+        } catch(e) {
+          if (lang !== this.fallbackLang) return this.load(this.fallbackLang);
+          this.translations = {};
+        }
+      },
+      t: function(key, params) {
+        var keys = key.split('.');
+        var val = this.translations;
+        for (var i = 0; i < keys.length; i++) {
+          if (val && typeof val === 'object' && keys[i] in val) { val = val[keys[i]]; }
+          else { return key; }
+        }
+        if (typeof val === 'string' && params) {
+          return val.replace(/\{\{(\w+)\}\}/g, function(_, p1) { return params[p1] !== undefined ? params[p1] : _; });
+        }
+        return typeof val === 'string' ? val : key;
+      }
+    };
+  </script>
 </head>
 <body>
   <div id="app">
