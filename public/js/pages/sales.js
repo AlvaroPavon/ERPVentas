@@ -5,7 +5,7 @@ let pendingImageData = null;
 let catalogProducts = [];
 
 async function renderSales(el) {
-  App.updateTitle('Nueva Venta');
+  App.updateTitle(I18n.t('title.sales'));
   currentSaleSession = null;
   currentSales = [];
   if (salesInterval) clearInterval(salesInterval);

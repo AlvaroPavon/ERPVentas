@@ -5,6 +5,7 @@ let chatHasMore = true;
 let typingTimeout = null;
 
 async function renderChatPage(container) {
+  App.updateTitle(I18n.t('title.chat'));
   container.innerHTML = `
     <div class="chat-container">
       <div class="chat-sidebar" id="chat-sidebar">

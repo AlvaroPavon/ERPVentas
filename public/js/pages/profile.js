@@ -1,5 +1,5 @@
 async function renderProfile(el) {
-  App.updateTitle('Perfil');
+  App.updateTitle(I18n.t('title.profile'));
 
   const avatarSrc = App.user?.avatar || '';
   el.innerHTML = `

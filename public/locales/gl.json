@@ -69,6 +69,39 @@
     "percentOfTotal": "{{pct}}% do total"
   },
   "month": {
-    "short": ["Xan", "Feb", "Mar", "Abr", "Mai", "Xuñ", "Xul", "Ago", "Set", "Out", "Nov", "Dec"]
+    "short": [
+      "Xan",
+      "Feb",
+      "Mar",
+      "Abr",
+      "Mai",
+      "Xuñ",
+      "Xul",
+      "Ago",
+      "Set",
+      "Out",
+      "Nov",
+      "Dec"
+    ]
+  },
+  "nav": {
+    "home": "Inicio",
+    "sell": "Vender",
+    "sessions": "Sesións",
+    "companies": "Empresas",
+    "chat": "Chat",
+    "profile": "Perfil"
+  },
+  "title": {
+    "sales": "Nova Venta",
+    "sessions": "Sesións",
+    "companies": "Empresas",
+    "companyDetail": "Empresa",
+    "profile": "Perfil",
+    "activity": "Actividade",
+    "joinRequests": "Solicitudes",
+    "inventory": "Inventario",
+    "commissions": "Comisións",
+    "chat": "Chat"
   }
 }

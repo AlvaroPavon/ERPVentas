@@ -1,5 +1,5 @@
 async function renderJoinRequests(el) {
-  App.updateTitle('Solicitudes');
+  App.updateTitle(I18n.t('title.joinRequests'));
 
   const [sent, received] = await Promise.all([
     API.getMyRequests().catch(() => []),

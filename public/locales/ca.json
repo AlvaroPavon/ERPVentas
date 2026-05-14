@@ -69,6 +69,39 @@
     "percentOfTotal": "{{pct}}% del total"
   },
   "month": {
-    "short": ["Gen", "Feb", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Oct", "Nov", "Des"]
+    "short": [
+      "Gen",
+      "Feb",
+      "Mar",
+      "Abr",
+      "Mai",
+      "Jun",
+      "Jul",
+      "Ago",
+      "Set",
+      "Oct",
+      "Nov",
+      "Des"
+    ]
+  },
+  "nav": {
+    "home": "Inici",
+    "sell": "Vendre",
+    "sessions": "Sessions",
+    "companies": "Empreses",
+    "chat": "Xat",
+    "profile": "Perfil"
+  },
+  "title": {
+    "sales": "Nova Venda",
+    "sessions": "Sessions",
+    "companies": "Empreses",
+    "companyDetail": "Empresa",
+    "profile": "Perfil",
+    "activity": "Activitat",
+    "joinRequests": "Sol·licituds",
+    "inventory": "Inventari",
+    "commissions": "Comissions",
+    "chat": "Xat"
   }
 }

@@ -31,6 +31,26 @@
     "products": "Aún no hay productos",
     "sessions": "No hay sesiones registradas"
   },
+  "nav": {
+    "home": "Inicio",
+    "sell": "Vender",
+    "sessions": "Sesiones",
+    "companies": "Empresas",
+    "chat": "Chat",
+    "profile": "Perfil"
+  },
+  "title": {
+    "sales": "Nueva Venta",
+    "sessions": "Sesiones",
+    "companies": "Empresas",
+    "companyDetail": "Empresa",
+    "profile": "Perfil",
+    "activity": "Actividad",
+    "joinRequests": "Solicitudes",
+    "inventory": "Inventario",
+    "commissions": "Comisiones",
+    "chat": "Chat"
+  },
   "common": {
     "loading": "Cargando...",
     "error": "Error",

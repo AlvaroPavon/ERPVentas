@@ -31,6 +31,26 @@
     "products": "No products yet",
     "sessions": "No sessions recorded"
   },
+  "nav": {
+    "home": "Home",
+    "sell": "Sell",
+    "sessions": "Sessions",
+    "companies": "Companies",
+    "chat": "Chat",
+    "profile": "Profile"
+  },
+  "title": {
+    "sales": "New Sale",
+    "sessions": "Sessions",
+    "companies": "Companies",
+    "companyDetail": "Company",
+    "profile": "Profile",
+    "activity": "Activity",
+    "joinRequests": "Requests",
+    "inventory": "Inventory",
+    "commissions": "Commissions",
+    "chat": "Chat"
+  },
   "common": {
     "loading": "Loading...",
     "error": "Error",

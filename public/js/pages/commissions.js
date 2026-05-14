@@ -1,5 +1,5 @@
 async function renderCommissions(el, params) {
-  App.updateTitle('Comisiones');
+  App.updateTitle(I18n.t('title.commissions'));
 
   const companyId = params.id;
   if (!companyId) {

@@ -124,6 +124,51 @@ const App = {
     }, 60000);
   },
 
+  // ===== Navigation =====
+
+  get NAV_ITEMS() {
+    return [
+      { page: 'home', icon: '📊', key: 'nav.home' },
+      { page: 'sales', icon: '➕', key: 'nav.sell' },
+      { page: 'sessions', icon: '📋', key: 'nav.sessions' },
+      { page: 'companies', icon: '🏢', key: 'nav.companies' },
+      { page: 'chat', icon: '💬', key: 'nav.chat', id: 'chat-nav-btn', badge: 'chat-badge' },
+      { page: 'profile', icon: '👤', key: 'nav.profile' },
+    ];
+  },
+
+  buildNav() {
+    const nav = document.getElementById('bottom-nav');
+    if (!nav) return;
+    nav.innerHTML = this.NAV_ITEMS.map(item => {
+      const badge = item.badge ? `<span id="${item.badge}" class="nav-badge" style="display:none;">0</span>` : '';
+      const id = item.id ? ` id="${item.id}"` : '';
+      return `<button class="nav-item${item.page === 'home' ? ' active' : ''}" data-page="${item.page}"${id}>
+        <span class="nav-icon">${item.icon}</span>
+        <span class="nav-label" data-i18n="${item.key}">${I18n.t(item.key)}</span>
+        ${badge}
+      </button>`;
+    }).join('');
+
+    // Attach click handlers
+    nav.querySelectorAll('.nav-item').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const page = btn.dataset.page;
+        if (page === Router.currentPage) return;
+        nav.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        location.hash = page;
+        Router.go(page, {});
+      });
+    });
+  },
+
+  updateNavLabels() {
+    document.querySelectorAll('.nav-label[data-i18n]').forEach(el => {
+      el.textContent = I18n.t(el.dataset.i18n);
+    });
+  },
+
   async init() {
     API.init();
     Router.init();
@@ -153,18 +198,13 @@ const App = {
       };
     }
 
-    // Bottom nav
-    document.querySelectorAll('.nav-item').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const page = btn.dataset.page;
-        if (page === Router.currentPage) return;
-        document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        location.hash = page;
-        Router.go(page, {});
-      });
-    });
+    // Build nav dynamically
+    this.buildNav();
 
+    // Update nav labels when language changes
+    I18n.onChange(function() {
+      App.updateNavLabels();
+    });
 
     // Check auth
     const token = localStorage.getItem('token');

@@ -1,5 +1,5 @@
 async function renderSessions(el) {
-  App.updateTitle('Sesiones');
+  App.updateTitle(I18n.t('title.sessions'));
 
   const today = new Date().toISOString().slice(0, 10);
   const firstDay = new Date();

@@ -1,6 +1,6 @@
 async function renderCompanyDetail(el, params) {
   const companyId = params.id;
-  App.updateTitle('Empresa');
+  App.updateTitle(I18n.t('title.companyDetail'));
 
   el.innerHTML = '<div style="text-align:center;padding:40px;"><div class="spinner"></div></div>';
 

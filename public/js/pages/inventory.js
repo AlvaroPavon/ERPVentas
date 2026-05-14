@@ -1,7 +1,7 @@
 let inventoryCharts = {};
 
 async function renderInventory(el, params) {
-  App.updateTitle('Inventario');
+  App.updateTitle(I18n.t('title.inventory'));
 
   const companyId = params.id;
   if (!companyId) {

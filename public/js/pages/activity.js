@@ -6,7 +6,7 @@ const activityIcons = {
 };
 
 async function renderActivity(el) {
-  App.updateTitle('Actividad');
+  App.updateTitle(I18n.t('title.activity'));
 
   el.innerHTML = `
     <div class="section-title">Registro de Actividad</div>

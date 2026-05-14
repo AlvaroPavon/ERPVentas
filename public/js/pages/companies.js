@@ -1,5 +1,5 @@
 async function renderCompanies(el) {
-  App.updateTitle('Empresas');
+  App.updateTitle(I18n.t('title.companies'));
 
   el.innerHTML = `
     <div class="search-bar">

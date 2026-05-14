@@ -69,6 +69,39 @@
     "percentOfTotal": "guztizkoaren {{pct}}%"
   },
   "month": {
-    "short": ["Urt", "Ots", "Mar", "Api", "Mai", "Eka", "Uzt", "Abu", "Ira", "Urr", "Aza", "Abe"]
+    "short": [
+      "Urt",
+      "Ots",
+      "Mar",
+      "Api",
+      "Mai",
+      "Eka",
+      "Uzt",
+      "Abu",
+      "Ira",
+      "Urr",
+      "Aza",
+      "Abe"
+    ]
+  },
+  "nav": {
+    "home": "Hasiera",
+    "sell": "Saldu",
+    "sessions": "Saioak",
+    "companies": "Enpresak",
+    "chat": "Txata",
+    "profile": "Profila"
+  },
+  "title": {
+    "sales": "Salmenta Berria",
+    "sessions": "Saioak",
+    "companies": "Enpresak",
+    "companyDetail": "Enpresa",
+    "profile": "Profila",
+    "activity": "Jarduera",
+    "joinRequests": "Eskaerak",
+    "inventory": "Inbentarioa",
+    "commissions": "Komisioak",
+    "chat": "Txata"
   }
 }
