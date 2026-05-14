@@ -3,43 +3,139 @@ const { getDb } = require('../database');
 
 const router = express.Router();
 
+/**
+ * Validates company access for a user.
+ * Returns the membership record if valid, or sends a 403 response and returns null.
+ */
+function checkCompanyAccess(req, res, companyId) {
+  if (!companyId) return true;
+  const db = getDb();
+  const membership = db.prepare('SELECT role FROM company_users WHERE company_id = ? AND user_id = ?').get(companyId, req.user.id);
+  if (!membership) {
+    res.status(403).json({ error: 'No tienes acceso a esta empresa' });
+    return false;
+  }
+  return true;
+}
+
 // Estadísticas mensuales del usuario (de todas sus empresas)
 router.get('/monthly', (req, res) => {
   try {
     const db = getDb();
-    const year = req.query.year || new Date().getFullYear();
-    const month = req.query.month || (new Date().getMonth() + 1);
+    const year = parseInt(req.query.year) || new Date().getFullYear();
+    const month = parseInt(req.query.month) || (new Date().getMonth() + 1);
+    const companyId = req.query.companyId;
+
+    if (!checkCompanyAccess(req, res, companyId)) return;
 
     const monthStr = `${year}-${String(month).padStart(2, '0')}`;
 
-    const stats = db.prepare(`
-      SELECT 
-        COUNT(DISTINCT ss.id) as session_count,
-        COUNT(s.id) as total_items,
-        COALESCE(SUM(s.price * s.quantity), 0) as total_amount,
-        COUNT(DISTINCT s.product_name) as unique_products
-      FROM sales_sessions ss
-      JOIN company_users cu ON cu.company_id = ss.company_id AND cu.user_id = ?
-      LEFT JOIN sales s ON s.session_id = ss.id
-      WHERE strftime('%Y-%m', ss.session_date) = ?
-    `).get(req.user.id, monthStr);
+    // Previous period (previous month)
+    const prevMonth = month === 1 ? 12 : month - 1;
+    const prevYear = month === 1 ? year - 1 : year;
+    const prevMonthStr = `${prevYear}-${String(prevMonth).padStart(2, '0')}`;
 
-    // Ventas por día del mes
-    const dailySales = db.prepare(`
-      SELECT ss.session_date,
-        COUNT(s.id) as items,
-        COALESCE(SUM(s.price * s.quantity), 0) as amount,
-        ss.name as session_name,
-        ss.id as session_id
-      FROM sales_sessions ss
-      JOIN company_users cu ON cu.company_id = ss.company_id AND cu.user_id = ?
-      LEFT JOIN sales s ON s.session_id = ss.id
-      WHERE strftime('%Y-%m', ss.session_date) = ?
-      GROUP BY ss.id
-      ORDER BY ss.session_date ASC
-    `).all(req.user.id, monthStr);
+    let stats, prevTotal, dailySales;
 
-    res.json({ stats, dailySales, year, month });
+    if (companyId) {
+      // Stats for the company
+      stats = db.prepare(`
+        SELECT 
+          COUNT(DISTINCT ss.id) as session_count,
+          COUNT(s.id) as total_items,
+          COALESCE(SUM(s.price * s.quantity), 0) as total_amount,
+          COUNT(DISTINCT s.product_name) as unique_products
+        FROM sales_sessions ss
+        LEFT JOIN sales s ON s.session_id = ss.id
+        WHERE strftime('%Y-%m', ss.session_date) = ?
+          AND ss.company_id = ?
+      `).get(monthStr, companyId);
+
+      // Previous period total for PoP calculation
+      const prevResult = db.prepare(`
+        SELECT COALESCE(SUM(s.price * s.quantity), 0) as total
+        FROM sales_sessions ss
+        LEFT JOIN sales s ON s.session_id = ss.id
+        WHERE strftime('%Y-%m', ss.session_date) = ?
+          AND ss.company_id = ?
+      `).get(prevMonthStr, companyId);
+      prevTotal = prevResult.total;
+
+      // Daily sales for the company
+      dailySales = db.prepare(`
+        SELECT ss.session_date,
+          COUNT(s.id) as items,
+          COALESCE(SUM(s.price * s.quantity), 0) as amount,
+          ss.name as session_name,
+          ss.id as session_id
+        FROM sales_sessions ss
+        LEFT JOIN sales s ON s.session_id = ss.id
+        WHERE strftime('%Y-%m', ss.session_date) = ?
+          AND ss.company_id = ?
+        GROUP BY ss.id
+        ORDER BY ss.session_date ASC
+      `).all(monthStr, companyId);
+    } else {
+      // Stats across all user's companies
+      stats = db.prepare(`
+        SELECT 
+          COUNT(DISTINCT ss.id) as session_count,
+          COUNT(s.id) as total_items,
+          COALESCE(SUM(s.price * s.quantity), 0) as total_amount,
+          COUNT(DISTINCT s.product_name) as unique_products
+        FROM sales_sessions ss
+        JOIN company_users cu ON cu.company_id = ss.company_id AND cu.user_id = ?
+        LEFT JOIN sales s ON s.session_id = ss.id
+        WHERE strftime('%Y-%m', ss.session_date) = ?
+      `).get(req.user.id, monthStr);
+
+      // Previous period total
+      const prevResult = db.prepare(`
+        SELECT COALESCE(SUM(s.price * s.quantity), 0) as total
+        FROM sales_sessions ss
+        JOIN company_users cu ON cu.company_id = ss.company_id AND cu.user_id = ?
+        LEFT JOIN sales s ON s.session_id = ss.id
+        WHERE strftime('%Y-%m', ss.session_date) = ?
+      `).get(req.user.id, prevMonthStr);
+      prevTotal = prevResult.total;
+
+      // Daily sales across all user's companies
+      dailySales = db.prepare(`
+        SELECT ss.session_date,
+          COUNT(s.id) as items,
+          COALESCE(SUM(s.price * s.quantity), 0) as amount,
+          ss.name as session_name,
+          ss.id as session_id
+        FROM sales_sessions ss
+        JOIN company_users cu ON cu.company_id = ss.company_id AND cu.user_id = ?
+        LEFT JOIN sales s ON s.session_id = ss.id
+        WHERE strftime('%Y-%m', ss.session_date) = ?
+        GROUP BY ss.id
+        ORDER BY ss.session_date ASC
+      `).all(req.user.id, monthStr);
+    }
+
+    // Calculate growth percentage and trend
+    let growth = null;
+    let trend = 'neutral';
+    if (prevTotal > 0) {
+      growth = Math.round((stats.total_amount - prevTotal) / prevTotal * 1000) / 10;
+      trend = growth >= 0 ? 'up' : 'down';
+    }
+
+    res.json({
+      stats: {
+        session_count: stats.session_count,
+        total_items: stats.total_items,
+        total_amount: stats.total_amount,
+        unique_products: stats.unique_products,
+        growth: growth,
+        trend: trend
+      },
+      dailySales,
+      year,
+      month
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Error al obtener estadísticas' });
@@ -51,20 +147,40 @@ router.get('/top-products', (req, res) => {
   try {
     const db = getDb();
     const limit = parseInt(req.query.limit) || 10;
+    const companyId = req.query.companyId;
 
-    const products = db.prepare(`
-      SELECT s.product_name,
-        COUNT(*) as times_sold,
-        SUM(s.quantity) as total_quantity,
-        COALESCE(SUM(s.price * s.quantity), 0) as total_revenue,
-        ROUND(AVG(s.price), 2) as avg_price
-      FROM sales s
-      JOIN sales_sessions ss ON ss.id = s.session_id
-      JOIN company_users cu ON cu.company_id = ss.company_id AND cu.user_id = ?
-      GROUP BY s.product_name
-      ORDER BY total_quantity DESC
-      LIMIT ?
-    `).all(req.user.id, limit);
+    if (!checkCompanyAccess(req, res, companyId)) return;
+
+    let products;
+    if (companyId) {
+      products = db.prepare(`
+        SELECT s.product_name,
+          COUNT(*) as times_sold,
+          SUM(s.quantity) as total_quantity,
+          COALESCE(SUM(s.price * s.quantity), 0) as total_revenue,
+          ROUND(AVG(s.price), 2) as avg_price
+        FROM sales s
+        JOIN sales_sessions ss ON ss.id = s.session_id
+        WHERE ss.company_id = ?
+        GROUP BY s.product_name
+        ORDER BY total_quantity DESC
+        LIMIT ?
+      `).all(companyId, limit);
+    } else {
+      products = db.prepare(`
+        SELECT s.product_name,
+          COUNT(*) as times_sold,
+          SUM(s.quantity) as total_quantity,
+          COALESCE(SUM(s.price * s.quantity), 0) as total_revenue,
+          ROUND(AVG(s.price), 2) as avg_price
+        FROM sales s
+        JOIN sales_sessions ss ON ss.id = s.session_id
+        JOIN company_users cu ON cu.company_id = ss.company_id AND cu.user_id = ?
+        GROUP BY s.product_name
+        ORDER BY total_quantity DESC
+        LIMIT ?
+      `).all(req.user.id, limit);
+    }
 
     res.json(products);
   } catch (err) {
@@ -78,23 +194,46 @@ router.get('/daily-comparison', (req, res) => {
   try {
     const db = getDb();
     const limit = parseInt(req.query.limit) || 20;
+    const companyId = req.query.companyId;
 
-    const days = db.prepare(`
-      SELECT ss.session_date,
-        ss.name as session_name,
-        ss.id as session_id,
-        c.name as company_name,
-        COUNT(s.id) as items_sold,
-        COALESCE(SUM(s.price * s.quantity), 0) as total_amount,
-        COUNT(DISTINCT s.user_id) as sellers
-      FROM sales_sessions ss
-      JOIN company_users cu ON cu.company_id = ss.company_id AND cu.user_id = ?
-      JOIN companies c ON c.id = ss.company_id
-      LEFT JOIN sales s ON s.session_id = ss.id
-      GROUP BY ss.id
-      ORDER BY ss.session_date DESC
-      LIMIT ?
-    `).all(req.user.id, limit);
+    if (!checkCompanyAccess(req, res, companyId)) return;
+
+    let days;
+    if (companyId) {
+      days = db.prepare(`
+        SELECT ss.session_date,
+          ss.name as session_name,
+          ss.id as session_id,
+          c.name as company_name,
+          COUNT(s.id) as items_sold,
+          COALESCE(SUM(s.price * s.quantity), 0) as total_amount,
+          COUNT(DISTINCT s.user_id) as sellers
+        FROM sales_sessions ss
+        JOIN companies c ON c.id = ss.company_id
+        LEFT JOIN sales s ON s.session_id = ss.id
+        WHERE ss.company_id = ?
+        GROUP BY ss.id
+        ORDER BY ss.session_date DESC
+        LIMIT ?
+      `).all(companyId, limit);
+    } else {
+      days = db.prepare(`
+        SELECT ss.session_date,
+          ss.name as session_name,
+          ss.id as session_id,
+          c.name as company_name,
+          COUNT(s.id) as items_sold,
+          COALESCE(SUM(s.price * s.quantity), 0) as total_amount,
+          COUNT(DISTINCT s.user_id) as sellers
+        FROM sales_sessions ss
+        JOIN company_users cu ON cu.company_id = ss.company_id AND cu.user_id = ?
+        JOIN companies c ON c.id = ss.company_id
+        LEFT JOIN sales s ON s.session_id = ss.id
+        GROUP BY ss.id
+        ORDER BY ss.session_date DESC
+        LIMIT ?
+      `).all(req.user.id, limit);
+    }
 
     res.json(days);
   } catch (err) {
@@ -195,30 +334,59 @@ router.get('/company/:companyId', (req, res) => {
 router.get('/overview', (req, res) => {
   try {
     const db = getDb();
+    const companyId = req.query.companyId;
 
-    const totalSessions = db.prepare(`
-      SELECT COUNT(DISTINCT ss.id) as count
-      FROM sales_sessions ss
-      JOIN company_users cu ON cu.company_id = ss.company_id AND cu.user_id = ?
-    `).get(req.user.id).count;
+    if (!checkCompanyAccess(req, res, companyId)) return;
 
-    const totalSales = db.prepare(`
-      SELECT COALESCE(SUM(s.price * s.quantity), 0) as total
-      FROM sales s
-      JOIN sales_sessions ss ON ss.id = s.session_id
-      JOIN company_users cu ON cu.company_id = ss.company_id AND cu.user_id = ?
-    `).get(req.user.id).total;
+    let totalSessions, totalSales, totalItems, companies;
 
-    const totalItems = db.prepare(`
-      SELECT COUNT(*) as count
-      FROM sales s
-      JOIN sales_sessions ss ON ss.id = s.session_id
-      JOIN company_users cu ON cu.company_id = ss.company_id AND cu.user_id = ?
-    `).get(req.user.id).count;
+    if (companyId) {
+      totalSessions = db.prepare(`
+        SELECT COUNT(DISTINCT ss.id) as count
+        FROM sales_sessions ss
+        WHERE ss.company_id = ?
+      `).get(companyId).count;
 
-    const companies = db.prepare(`
-      SELECT COUNT(*) as count FROM company_users WHERE user_id = ?
-    `).get(req.user.id).count;
+      totalSales = db.prepare(`
+        SELECT COALESCE(SUM(s.price * s.quantity), 0) as total
+        FROM sales s
+        JOIN sales_sessions ss ON ss.id = s.session_id
+        WHERE ss.company_id = ?
+      `).get(companyId).total;
+
+      totalItems = db.prepare(`
+        SELECT COUNT(*) as count
+        FROM sales s
+        JOIN sales_sessions ss ON ss.id = s.session_id
+        WHERE ss.company_id = ?
+      `).get(companyId).count;
+
+      companies = 1;
+    } else {
+      totalSessions = db.prepare(`
+        SELECT COUNT(DISTINCT ss.id) as count
+        FROM sales_sessions ss
+        JOIN company_users cu ON cu.company_id = ss.company_id AND cu.user_id = ?
+      `).get(req.user.id).count;
+
+      totalSales = db.prepare(`
+        SELECT COALESCE(SUM(s.price * s.quantity), 0) as total
+        FROM sales s
+        JOIN sales_sessions ss ON ss.id = s.session_id
+        JOIN company_users cu ON cu.company_id = ss.company_id AND cu.user_id = ?
+      `).get(req.user.id).total;
+
+      totalItems = db.prepare(`
+        SELECT COUNT(*) as count
+        FROM sales s
+        JOIN sales_sessions ss ON ss.id = s.session_id
+        JOIN company_users cu ON cu.company_id = ss.company_id AND cu.user_id = ?
+      `).get(req.user.id).count;
+
+      companies = db.prepare(`
+        SELECT COUNT(*) as count FROM company_users WHERE user_id = ?
+      `).get(req.user.id).count;
+    }
 
     res.json({ totalSessions, totalSales, totalItems, companies });
   } catch (err) {
@@ -231,71 +399,138 @@ router.get('/overview', (req, res) => {
 router.get('/advanced', (req, res) => {
   try {
     const db = getDb();
+    const companyId = req.query.companyId;
 
-    // Weekly comparison (current week vs previous week)
-    const weekSales = db.prepare(`
-      SELECT CASE
-        WHEN strftime('%W', ss.session_date) = strftime('%W', 'now') THEN 'this_week'
-        ELSE 'last_week'
-      END as week,
-      COALESCE(SUM(s.price * s.quantity), 0) as total,
-      COUNT(DISTINCT ss.id) as sessions,
-      COUNT(s.id) as items
-      FROM sales_sessions ss
-      JOIN company_users cu ON cu.company_id = ss.company_id AND cu.user_id = ?
-      LEFT JOIN sales s ON s.session_id = ss.id
-      WHERE ss.session_date >= date('now', '-14 days')
-      GROUP BY week
-    `).all(req.user.id);
+    if (!checkCompanyAccess(req, res, companyId)) return;
 
-    const thisWeek = weekSales.find(w => w.week === 'this_week');
-    const lastWeek = weekSales.find(w => w.week === 'last_week');
+    let thisWeek, lastWeek, bySeller, monthlyTrends, avgTicket;
 
-    // Revenue by seller
-    const bySeller = db.prepare(`
-      SELECT u.name,
-        COUNT(s.id) as items,
-        COALESCE(SUM(s.price * s.quantity), 0) as total
-      FROM sales s
-      JOIN users u ON u.id = s.user_id
-      JOIN sales_sessions ss ON ss.id = s.session_id
-      JOIN company_users cu ON cu.company_id = ss.company_id AND cu.user_id = ?
-      GROUP BY s.user_id
-      ORDER BY total DESC
-    `).all(req.user.id);
-
-    // Monthly trends (last 6 months)
-    const monthlyTrends = db.prepare(`
-      SELECT strftime('%Y-%m', ss.session_date) as month,
+    if (companyId) {
+      // Weekly comparison
+      const weekSales = db.prepare(`
+        SELECT CASE
+          WHEN strftime('%W', ss.session_date) = strftime('%W', 'now') THEN 'this_week'
+          ELSE 'last_week'
+        END as week,
         COALESCE(SUM(s.price * s.quantity), 0) as total,
         COUNT(DISTINCT ss.id) as sessions,
         COUNT(s.id) as items
-      FROM sales_sessions ss
-      JOIN company_users cu ON cu.company_id = ss.company_id AND cu.user_id = ?
-      LEFT JOIN sales s ON s.session_id = ss.id
-      WHERE ss.session_date >= date('now', '-6 months')
-      GROUP BY month
-      ORDER BY month ASC
-    `).all(req.user.id);
+        FROM sales_sessions ss
+        LEFT JOIN sales s ON s.session_id = ss.id
+        WHERE ss.session_date >= date('now', '-14 days')
+          AND ss.company_id = ?
+        GROUP BY week
+      `).all(companyId);
 
-    // Average ticket per session
-    const avgTicket = db.prepare(`
-      SELECT ROUND(AVG(t.total), 2) as avg_ticket
-      FROM (
-        SELECT COALESCE(SUM(s.price * s.quantity), 0) as total
+      thisWeek = weekSales.find(w => w.week === 'this_week');
+      lastWeek = weekSales.find(w => w.week === 'last_week');
+
+      // Revenue by seller
+      bySeller = db.prepare(`
+        SELECT u.name,
+          COUNT(s.id) as items,
+          COALESCE(SUM(s.price * s.quantity), 0) as total
+        FROM sales s
+        JOIN users u ON u.id = s.user_id
+        JOIN sales_sessions ss ON ss.id = s.session_id
+        WHERE ss.company_id = ?
+        GROUP BY s.user_id
+        ORDER BY total DESC
+      `).all(companyId);
+
+      // Monthly trends
+      monthlyTrends = db.prepare(`
+        SELECT strftime('%Y-%m', ss.session_date) as month,
+          COALESCE(SUM(s.price * s.quantity), 0) as total,
+          COUNT(DISTINCT ss.id) as sessions,
+          COUNT(s.id) as items
+        FROM sales_sessions ss
+        LEFT JOIN sales s ON s.session_id = ss.id
+        WHERE ss.session_date >= date('now', '-6 months')
+          AND ss.company_id = ?
+        GROUP BY month
+        ORDER BY month ASC
+      `).all(companyId);
+
+      // Average ticket
+      const avgResult = db.prepare(`
+        SELECT ROUND(AVG(t.total), 2) as avg_ticket
+        FROM (
+          SELECT COALESCE(SUM(s.price * s.quantity), 0) as total
+          FROM sales_sessions ss
+          LEFT JOIN sales s ON s.session_id = ss.id
+          WHERE ss.company_id = ?
+          GROUP BY ss.id
+        ) t
+      `).get(companyId);
+      avgTicket = avgResult ? avgResult.avg_ticket : 0;
+    } else {
+      // Weekly comparison
+      const weekSales = db.prepare(`
+        SELECT CASE
+          WHEN strftime('%W', ss.session_date) = strftime('%W', 'now') THEN 'this_week'
+          ELSE 'last_week'
+        END as week,
+        COALESCE(SUM(s.price * s.quantity), 0) as total,
+        COUNT(DISTINCT ss.id) as sessions,
+        COUNT(s.id) as items
         FROM sales_sessions ss
         JOIN company_users cu ON cu.company_id = ss.company_id AND cu.user_id = ?
         LEFT JOIN sales s ON s.session_id = ss.id
-        GROUP BY ss.id
-      ) t
-    `).get(req.user.id);
+        WHERE ss.session_date >= date('now', '-14 days')
+        GROUP BY week
+      `).all(req.user.id);
+
+      thisWeek = weekSales.find(w => w.week === 'this_week');
+      lastWeek = weekSales.find(w => w.week === 'last_week');
+
+      // Revenue by seller
+      bySeller = db.prepare(`
+        SELECT u.name,
+          COUNT(s.id) as items,
+          COALESCE(SUM(s.price * s.quantity), 0) as total
+        FROM sales s
+        JOIN users u ON u.id = s.user_id
+        JOIN sales_sessions ss ON ss.id = s.session_id
+        JOIN company_users cu ON cu.company_id = ss.company_id AND cu.user_id = ?
+        GROUP BY s.user_id
+        ORDER BY total DESC
+      `).all(req.user.id);
+
+      // Monthly trends
+      monthlyTrends = db.prepare(`
+        SELECT strftime('%Y-%m', ss.session_date) as month,
+          COALESCE(SUM(s.price * s.quantity), 0) as total,
+          COUNT(DISTINCT ss.id) as sessions,
+          COUNT(s.id) as items
+        FROM sales_sessions ss
+        JOIN company_users cu ON cu.company_id = ss.company_id AND cu.user_id = ?
+        LEFT JOIN sales s ON s.session_id = ss.id
+        WHERE ss.session_date >= date('now', '-6 months')
+        GROUP BY month
+        ORDER BY month ASC
+      `).all(req.user.id);
+
+      // Average ticket
+      const avgResult = db.prepare(`
+        SELECT ROUND(AVG(t.total), 2) as avg_ticket
+        FROM (
+          SELECT COALESCE(SUM(s.price * s.quantity), 0) as total
+          FROM sales_sessions ss
+          JOIN company_users cu ON cu.company_id = ss.company_id AND cu.user_id = ?
+          LEFT JOIN sales s ON s.session_id = ss.id
+          GROUP BY ss.id
+        ) t
+      `).get(req.user.id);
+      avgTicket = avgResult ? avgResult.avg_ticket : 0;
+    }
 
     res.json({
       thisWeek: thisWeek ? { total: thisWeek.total, sessions: thisWeek.sessions, items: thisWeek.items } : { total: 0, sessions: 0, items: 0 },
       lastWeek: lastWeek ? { total: lastWeek.total, sessions: lastWeek.sessions, items: lastWeek.items } : { total: 0, sessions: 0, items: 0 },
       bySeller,
       monthlyTrends,
-      avgTicket: avgTicket.avg_ticket || 0
+      avgTicket
     });
   } catch (err) {
     console.error(err);
