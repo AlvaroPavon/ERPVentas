@@ -52,6 +52,12 @@ function renderRegister(el) {
       const data = await API.register(name, email, password);
       API.setToken(data.token);
       App.user = data.user;
+      const lang = data.user.language || 'es';
+      if (typeof I18n?.load !== 'function') {
+        console.warn('I18n not loaded, creating inline fallback');
+        window.I18n = { translations: {}, currentLang: 'es', fallbackLang: 'es', t: k => k, load: async () => {} };
+      }
+      await I18n.load(lang);
       App.showMainApp();
       document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
       document.querySelector('[data-page="home"]').classList.add('active');

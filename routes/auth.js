@@ -42,7 +42,7 @@ router.post('/register', (req, res) => {
       hashed
     );
 
-    const user = { id: result.lastInsertRowid, name: name.trim(), email: email.toLowerCase() };
+    const user = { id: result.lastInsertRowid, name: name.trim(), email: email.toLowerCase(), language: 'es' };
     const token = generateToken(user);
 
     res.status(201).json({ token, user });
@@ -66,7 +66,7 @@ router.post('/login', (req, res) => {
     }
 
     const token = generateToken(user);
-    res.json({ token, user: { id: user.id, name: user.name, email: user.email, avatar: user.avatar } });
+    res.json({ token, user: { id: user.id, name: user.name, email: user.email, avatar: user.avatar, language: user.language || 'es' } });
   } catch (err) {
     console.error('Login error:', err);
     res.status(500).json({ error: 'Error al iniciar sesión' });

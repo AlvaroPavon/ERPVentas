@@ -122,6 +122,10 @@ const App = {
         const user = await API.me();
         this.user = user;
         const lang = user.language || 'es';
+        if (typeof I18n?.load !== 'function') {
+          console.warn('I18n not loaded, creating inline fallback');
+          window.I18n = { translations: {}, currentLang: 'es', fallbackLang: 'es', t: k => k, load: async () => {} };
+        }
         await I18n.load(lang);
         this.showMainApp();
         Router.go('home', {});

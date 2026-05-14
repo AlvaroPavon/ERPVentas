@@ -1,4 +1,4 @@
-const CACHE_NAME = 'notas-venta-v1';
+const CACHE_NAME = 'notas-venta-v2';
 
 const STATIC_FILES = [
   '/',
@@ -6,6 +6,7 @@ const STATIC_FILES = [
   '/css/style.css',
   '/js/api.js',
   '/js/router.js',
+  '/js/i18n.js',
   '/js/app.js',
   '/js/pages/login.js',
   '/js/pages/register.js',
@@ -16,6 +17,16 @@ const STATIC_FILES = [
   '/js/pages/company-detail.js',
   '/js/pages/profile.js',
   '/js/pages/activity.js',
+  '/js/pages/join-requests.js',
+  '/js/pages/inventory.js',
+  '/js/pages/commissions.js',
+  '/js/pages/chat.js',
+  '/js/chat.js',
+  '/locales/es.json',
+  '/locales/en.json',
+  '/locales/ca.json',
+  '/locales/eu.json',
+  '/locales/gl.json',
   '/manifest.json',
 ];
 

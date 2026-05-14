@@ -157,6 +157,9 @@ async function renderHome(el) {
 
   document.getElementById('lang-select')?.addEventListener('change', async (e) => {
     const lang = e.target.value;
+    if (typeof I18n?.load !== 'function') {
+      window.I18n = { translations: {}, currentLang: 'es', fallbackLang: 'es', t: k => k, load: async () => {} };
+    }
     await I18n.load(lang);
     try {
       await API.updateLanguage(lang);
