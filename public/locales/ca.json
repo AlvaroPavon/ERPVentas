@@ -1,0 +1,70 @@
+{
+  "dashboard": {
+    "title": "Inici",
+    "customize": "Personalitzar",
+    "monthSelector": "{{month}} {{year}}",
+    "noWidgets": "Tots els widgets estan amagats. Fes clic a ⚙️ Personalitzar per mostrar-los."
+  },
+  "stats": {
+    "totalSales": "Vendes Totals",
+    "totalItems": "Productes Venuts",
+    "sessions": "Sessions",
+    "companies": "Empreses",
+    "averageTicket": "Ticket Promig",
+    "thisWeek": "Aquesta setmana ({{diff}}% vs anterior)"
+  },
+  "chart": {
+    "monthlySales": "Vendes del Mes",
+    "topProducts": "Productes Més Venuts",
+    "dailyComparison": "Comparativa per Dia",
+    "monthlyTrend": "Tendència Mensual (6 mesos)",
+    "sellersBreakdown": "Vendes per Venedor",
+    "income": "Ingressos",
+    "totalEuro": "Total (€)"
+  },
+  "noData": {
+    "month": "No hi ha dades aquest mes",
+    "products": "Encara no hi ha productes",
+    "sessions": "No hi ha sessions registrades"
+  },
+  "common": {
+    "loading": "Carregant...",
+    "error": "Error",
+    "save": "Guardar",
+    "cancel": "Cancel·lar",
+    "search": "Cercar",
+    "confirm": "Confirmar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "close": "Tancar",
+    "back": "Tornar",
+    "retry": "Reintentar"
+  },
+  "language": {
+    "name": "Idioma",
+    "selector": "Idioma:",
+    "es": "Español",
+    "en": "English",
+    "ca": "Català",
+    "eu": "Euskara",
+    "gl": "Galego"
+  },
+  "widget": {
+    "stats": "Resum global",
+    "monthly": "Vendes del Mes (gràfic)",
+    "topProducts": "Productes Més Venuts",
+    "dailyComparison": "Comparativa per Dia",
+    "advancedStats": "Estadístiques Avançades"
+  },
+  "modal": {
+    "customizeDashboard": "Personalitzar Dashboard",
+    "selectSections": "Selecciona quines seccions mostrar:"
+  },
+  "sales": {
+    "items": "productes",
+    "percentOfTotal": "{{pct}}% del total"
+  },
+  "month": {
+    "short": ["Gen", "Feb", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Oct", "Nov", "Des"]
+  }
+}

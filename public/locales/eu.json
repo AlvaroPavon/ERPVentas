@@ -1,0 +1,70 @@
+{
+  "dashboard": {
+    "title": "Hasiera",
+    "customize": "Pertsonalizatu",
+    "monthSelector": "{{month}} {{year}}",
+    "noWidgets": "Widget guztiak ezkutatuta daude. Egin klik ⚙️ Pertsonalizatu botoian erakusteko."
+  },
+  "stats": {
+    "totalSales": "Salmenta Guztiak",
+    "totalItems": "Saltutako Produktuak",
+    "sessions": "Saioak",
+    "companies": "Enpresak",
+    "averageTicket": "Batez besteko Ticketa",
+    "thisWeek": "Aste hau ({{diff}}% vs aurrekoa)"
+  },
+  "chart": {
+    "monthlySales": "Hileko Salmentak",
+    "topProducts": "Produktu Salduenak",
+    "dailyComparison": "Eguneroko Konparazioa",
+    "monthlyTrend": "Hileko Joera (6 hilabete)",
+    "sellersBreakdown": "Salmentak Saltzailearen arabera",
+    "income": "Sarrerak",
+    "totalEuro": "Guztira (€)"
+  },
+  "noData": {
+    "month": "Ez dago daturik hilabete honetan",
+    "products": "Oraindik ez dago produkturik",
+    "sessions": "Ez dago saio erregistraturik"
+  },
+  "common": {
+    "loading": "Kargatzen...",
+    "error": "Errorea",
+    "save": "Gorde",
+    "cancel": "Utzi",
+    "search": "Bilatu",
+    "confirm": "Baieztatu",
+    "delete": "Ezabatu",
+    "edit": "Editatu",
+    "close": "Itxi",
+    "back": "Itzuli",
+    "retry": "Saiatu berriro"
+  },
+  "language": {
+    "name": "Hizkuntza",
+    "selector": "Hizkuntza:",
+    "es": "Español",
+    "en": "English",
+    "ca": "Català",
+    "eu": "Euskara",
+    "gl": "Galego"
+  },
+  "widget": {
+    "stats": "Laburpen orokorra",
+    "monthly": "Hileko Salmentak (grafikoa)",
+    "topProducts": "Produktu Salduenak",
+    "dailyComparison": "Eguneroko Konparazioa",
+    "advancedStats": "Estatistika Aurreratuak"
+  },
+  "modal": {
+    "customizeDashboard": "Dashboard-a Pertsonalizatu",
+    "selectSections": "Aukeratu zein atal erakutsi:"
+  },
+  "sales": {
+    "items": "produktu",
+    "percentOfTotal": "guztizkoaren {{pct}}%"
+  },
+  "month": {
+    "short": ["Urt", "Ots", "Mar", "Api", "Mai", "Eka", "Uzt", "Abu", "Ira", "Urr", "Aza", "Abe"]
+  }
+}

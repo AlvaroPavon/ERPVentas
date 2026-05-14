@@ -1,0 +1,70 @@
+{
+  "dashboard": {
+    "title": "Home",
+    "customize": "Customize",
+    "monthSelector": "{{month}} {{year}}",
+    "noWidgets": "All widgets are hidden. Click ⚙️ Customize to show them."
+  },
+  "stats": {
+    "totalSales": "Total Sales",
+    "totalItems": "Items Sold",
+    "sessions": "Sessions",
+    "companies": "Companies",
+    "averageTicket": "Average Ticket",
+    "thisWeek": "This week ({{diff}}% vs previous)"
+  },
+  "chart": {
+    "monthlySales": "Monthly Sales",
+    "topProducts": "Top Products",
+    "dailyComparison": "Daily Comparison",
+    "monthlyTrend": "Monthly Trend (6 months)",
+    "sellersBreakdown": "Sales by Seller",
+    "income": "Income",
+    "totalEuro": "Total (€)"
+  },
+  "noData": {
+    "month": "No data this month",
+    "products": "No products yet",
+    "sessions": "No sessions recorded"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "save": "Save",
+    "cancel": "Cancel",
+    "search": "Search",
+    "confirm": "Confirm",
+    "delete": "Delete",
+    "edit": "Edit",
+    "close": "Close",
+    "back": "Back",
+    "retry": "Retry"
+  },
+  "language": {
+    "name": "Language",
+    "selector": "Language:",
+    "es": "Español",
+    "en": "English",
+    "ca": "Català",
+    "eu": "Euskara",
+    "gl": "Galego"
+  },
+  "widget": {
+    "stats": "Global Summary",
+    "monthly": "Monthly Sales (chart)",
+    "topProducts": "Top Products",
+    "dailyComparison": "Daily Comparison",
+    "advancedStats": "Advanced Statistics"
+  },
+  "modal": {
+    "customizeDashboard": "Customize Dashboard",
+    "selectSections": "Select sections to show:"
+  },
+  "sales": {
+    "items": "items",
+    "percentOfTotal": "{{pct}}% of total"
+  },
+  "month": {
+    "short": ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+  }
+}

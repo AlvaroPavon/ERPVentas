@@ -1,0 +1,70 @@
+{
+  "dashboard": {
+    "title": "Inicio",
+    "customize": "Personalizar",
+    "monthSelector": "{{month}} {{year}}",
+    "noWidgets": "Todos os widgets están ocultos. Fai clic en ⚙️ Personalizar para mostralos."
+  },
+  "stats": {
+    "totalSales": "Vendas Totais",
+    "totalItems": "Produtos Vendidos",
+    "sessions": "Sesións",
+    "companies": "Empresas",
+    "averageTicket": "Ticket Promedio",
+    "thisWeek": "Esta semana ({{diff}}% vs anterior)"
+  },
+  "chart": {
+    "monthlySales": "Vendas do Mes",
+    "topProducts": "Produtos Máis Vendidos",
+    "dailyComparison": "Comparativa por Día",
+    "monthlyTrend": "Tendencia Mensual (6 meses)",
+    "sellersBreakdown": "Vendas por Vendedor",
+    "income": "Ingresos",
+    "totalEuro": "Total (€)"
+  },
+  "noData": {
+    "month": "Non hai datos este mes",
+    "products": "Aínda non hai produtos",
+    "sessions": "Non hai sesións rexistradas"
+  },
+  "common": {
+    "loading": "Cargando...",
+    "error": "Erro",
+    "save": "Gardar",
+    "cancel": "Cancelar",
+    "search": "Buscar",
+    "confirm": "Confirmar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "close": "Pechar",
+    "back": "Volver",
+    "retry": "Reintentar"
+  },
+  "language": {
+    "name": "Idioma",
+    "selector": "Idioma:",
+    "es": "Español",
+    "en": "English",
+    "ca": "Català",
+    "eu": "Euskara",
+    "gl": "Galego"
+  },
+  "widget": {
+    "stats": "Resumo global",
+    "monthly": "Vendas do Mes (gráfico)",
+    "topProducts": "Produtos Máis Vendidos",
+    "dailyComparison": "Comparativa por Día",
+    "advancedStats": "Estatísticas Avanzadas"
+  },
+  "modal": {
+    "customizeDashboard": "Personalizar Dashboard",
+    "selectSections": "Selecciona que seccións mostrar:"
+  },
+  "sales": {
+    "items": "produtos",
+    "percentOfTotal": "{{pct}}% do total"
+  },
+  "month": {
+    "short": ["Xan", "Feb", "Mar", "Abr", "Mai", "Xuñ", "Xul", "Ago", "Set", "Out", "Nov", "Dec"]
+  }
+}
