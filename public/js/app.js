@@ -52,20 +52,6 @@ const App = {
       }
     });
 
-    // Dark toggle button in header
-    document.getElementById('dark-toggle')?.addEventListener('click', () => {
-      if (this.themeMode === 'auto') {
-        this.themeMode = 'dark';
-      } else if (this.themeMode === 'dark') {
-        this.themeMode = 'light';
-      } else {
-        this.themeMode = 'auto';
-      }
-      localStorage.setItem('themeMode', this.themeMode);
-      this.resolveDarkMode();
-      this.applyTheme();
-      this.notifyAccentListeners();
-    });
   },
 
   resolveDarkMode() {
@@ -82,15 +68,12 @@ const App = {
   applyTheme() {
     const html = document.documentElement;
     const metaTheme = document.querySelector('meta[name="theme-color"]');
-    const toggle = document.getElementById('dark-toggle');
 
     // Dark mode
     if (this.darkMode) {
       html.setAttribute('data-theme', 'dark');
-      if (toggle) toggle.textContent = '☀️';
     } else {
       html.removeAttribute('data-theme');
-      if (toggle) toggle.textContent = '🌙';
     }
 
     // Accent color
@@ -182,17 +165,6 @@ const App = {
       });
     });
 
-    // Menu button
-    document.getElementById('menu-btn')?.addEventListener('click', () => {
-      const current = Router.currentPage;
-      const pages = ['home', 'sales', 'sessions', 'companies', 'chat', 'profile'];
-      const idx = pages.indexOf(current);
-      const next = pages[(idx + 1) % pages.length];
-      document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
-      document.querySelector('[data-page="' + next + '"]')?.classList.add('active');
-      location.hash = next;
-      Router.go(next, {});
-    });
 
     // Check auth
     const token = localStorage.getItem('token');

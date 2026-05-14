@@ -167,13 +167,8 @@ html, body {
 #app-header {
   height: var(--header-height);
   display: flex; align-items: center; padding: 0 16px;
-  background: var(--bg-card);
-  border-bottom: 1px solid var(--border);
-  position: sticky; top: 0; z-index: 100;
+  background: transparent;
   flex-shrink: 0;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  background: var(--header-bg);
 }
 .header-left { display: flex; align-items: center; gap: 8px; min-width: 40px; }
 .header-center { flex: 1; text-align: center; }
@@ -185,7 +180,6 @@ html, body {
 .header-right { min-width: 40px; display: flex; justify-content: flex-end; }
 .header-user { font-size: 12px; color: var(--text-secondary); max-width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: flex; align-items: center; justify-content: flex-end; }
 .header-avatar { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
-#menu-btn { display: none; }
 .icon-btn {
   background: none; border: none; cursor: pointer; padding: 6px;
   font-size: 18px; border-radius: var(--radius-full); width: 32px; height: 32px;
@@ -193,7 +187,6 @@ html, body {
   transition: var(--transition); color: var(--text-secondary);
 }
 .icon-btn:active { background: var(--surface); transform: scale(0.9); }
-#dark-toggle { font-size: 16px; }
 
 /* Main Content */
 #main-content {
