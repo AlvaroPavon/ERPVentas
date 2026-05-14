@@ -1,6 +1,6 @@
 # PROGRESO DEL PROYECTO - Notas de Venta
 
-## Estado Actual: ✅ EN DESARROLLO (v1.5.0)
+## Estado Actual: ✅ EN DESARROLLO (v1.9.0)
 
 ## Resumen
 
@@ -221,6 +221,16 @@ Con módulo de inventario, sistema de comisiones, dashboard por empresa y export
 - [x] Indicadores visuales de crecimiento (↑ verde / ↓ rojo / 🆕 Nuevo)
 - [x] 13 tests nuevos (155 total)
 
+### 23. 🎨 Sistema de Temas con Paletas de Acento (v1.9.0)
+- [x] 3 modos de tema: Claro / Oscuro / Auto (sigue prefers-color-scheme del dispositivo)
+- [x] 8 paletas de color acento: azul, verde, morado, naranja, rosa, teal, rojo, índigo
+- [x] Selector de modo y acento en Perfil
+- [x] Persistencia en localStorage
+- [x] Toggle en header cicla: Auto → Oscuro → Claro
+- [x] theme-color dinámico para PWA splash screen
+- [x] CSS custom properties con [data-accent] para rendimiento óptimo
+- [x] dark/light mode con @media (prefers-color-scheme)
+
 ### Próximas
 - [ ] **Exportar dashboard como PDF/imagen** — compartir gráficas
 - [ ] **Modo offline completo** — IndexedDB + sincronización
@@ -233,8 +243,8 @@ Con módulo de inventario, sistema de comisiones, dashboard por empresa y export
 - [ ] **Tests E2E frontend** — Playwright
 - [ ] **CI/CD pipeline** — GitHub Actions
 - [ ] **API pública documentada** — Swagger
-- [ ] **Panel multi-idioma** — es/en/ca/eu/gl
-- [ ] **Vista administrador** — panel global multi-empresa
+- [x] **Panel multi-idioma** — es/en/ca/eu/gl (v1.8.0)
+- [x] **Vista administrador** — panel global multi-empresa (v1.8.0)
 
 ## Notas del Diseño
 

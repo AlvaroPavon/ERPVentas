@@ -19,7 +19,8 @@ Aplicación web progresiva (PWA) instalable en Android e iOS para gestionar vent
 - **Multi-vendedor**: Varios usuarios pueden añadir ventas a la misma sesión
 - **Notas por Sesión**: Añade notas/observaciones a cada sesión de venta
 - **Filtro de Sesiones**: Busca por nombre y filtra por rango de fechas
-- **Modo Oscuro Automático**: Cambio automático según hora del día (20:00-07:00) o manual
+- **Temas Personalizables**: 3 modos (Claro / Oscuro / Auto), 8 paletas de color acento seleccionables desde Perfil
+- **Modo Oscuro Automático**: Sigue la configuración del dispositivo o selección manual, con 8 colores de acento
 - **Notificaciones Push**: Recordatorios y alertas vía push nativas
 - **Logs de Actividad**: Historial completo de todas las acciones con paginación
 - **Backup Automático**: Backup diario de la BD con rotación de 7 días + descarga manual
@@ -210,6 +211,8 @@ Todas las rutas excepto `/api/auth/*` requieren header `Authorization: Bearer <t
 | PUT | `/api/users/profile` | Actualizar perfil |
 | PUT | `/api/users/password` | Cambiar contraseña |
 | PUT | `/api/users/avatar` | Actualizar avatar |
+| GET | `/api/user/language` | Obtener idioma del usuario |
+| PUT | `/api/user/language` | Actualizar idioma (`es`, `en`, `ca`, `eu`, `gl`) |
 | GET | `/api/users/:id/public` | Perfil público (sin auth) |
 
 ### Actividad
