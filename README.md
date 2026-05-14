@@ -7,7 +7,9 @@ Aplicación web progresiva (PWA) instalable en Android e iOS para gestionar vent
 - **Gestión de Ventas**: Añade productos con nombre, precio y cantidad durante el día de venta
 - **Edición inline**: Corrige nombre, cantidad o precio de productos ya vendidos
 - **Resumen PDF/CSV/Excel**: Exporta el detalle y total de ventas al finalizar
-- **Dashboard Interactivo**: Gráficas de ventas mensuales, productos más vendidos, comparativa por días, tendencias 6 meses
+- **Dashboard Interactivo**: Gráficas de ventas mensuales, productos más vendidos, comparativa por días, tendencias 6 meses, indicadores de crecimiento vs periodo anterior
+- **Multi-idioma**: Dashboard traducido a 5 idiomas (español, inglés, catalán, euskera, gallego) con selector persistente
+- **Vista Multi-empresa**: Los administradores pueden filtrar el dashboard por empresa específica con validación RBAC
 - **Múltiples Empresas**: Crea empresas y añade trabajadores para llevar ventas colaborativas
 - **Roles y Permisos**: 4 roles predefinidos (owner/admin/member/cashier) con 8 permisos granulares
 - **Solicitudes de Unión**: Los usuarios pueden solicitar unirse a empresas y los admin aceptar/rechazar
@@ -192,11 +194,14 @@ Todas las rutas excepto `/api/auth/*` requieren header `Authorization: Bearer <t
 ### Dashboard
 | Método | Ruta | Descripción |
 |--------|------|-------------|
-| GET | `/api/dashboard/monthly` | Estadísticas mensuales |
-| GET | `/api/dashboard/top-products` | Productos más vendidos |
-| GET | `/api/dashboard/daily-comparison` | Comparativa por días |
-| GET | `/api/dashboard/overview` | Resumen global |
-| GET | `/api/dashboard/advanced` | Estadísticas avanzadas |
+| GET | `/api/dashboard/monthly?year=&month=&companyId=` | Estadísticas mensuales con PoP growth |
+| GET | `/api/dashboard/top-products?limit=&companyId=` | Productos más vendidos |
+| GET | `/api/dashboard/daily-comparison?limit=&companyId=` | Comparativa por días |
+| GET | `/api/dashboard/overview?companyId=` | Resumen global |
+| GET | `/api/dashboard/advanced?companyId=` | Estadísticas avanzadas |
+| GET | `/api/dashboard/company/:companyId` | Estadísticas detalladas de empresa |
+
+> Los endpoints de dashboard aceptan `companyId` opcional. Los usuarios Admin/Owner pueden filtrar por empresa; si no se proporciona, se muestran datos agregados de todas las empresas del usuario.
 
 ### Usuario
 | Método | Ruta | Descripción |

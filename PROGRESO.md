@@ -212,9 +212,17 @@ Con módulo de inventario, sistema de comisiones, dashboard por empresa y export
 
 ## Funcionalidades Pendientes (Futuras)
 
+### 22. 🌐 Multi-idioma Dashboard + Multi-empresa + Métricas Comparativas (v1.8.0)
+- [x] Sistema i18n con 5 idiomas (es, en, ca, eu, gl)
+- [x] Selector de idioma persistente en dashboard
+- [x] Filtro multi-empresa por companyId para Admin/Owner
+- [x] Validación RBAC: 403 si no pertenece a la empresa
+- [x] Cálculo Period-over-Period con CTEs SQL
+- [x] Indicadores visuales de crecimiento (↑ verde / ↓ rojo / 🆕 Nuevo)
+- [x] 13 tests nuevos (155 total)
+
 ### Próximas
 - [ ] **Exportar dashboard como PDF/imagen** — compartir gráficas
-- [ ] **Comparativa vs periodo anterior** en dashboard
 - [ ] **Modo offline completo** — IndexedDB + sincronización
 
 ### Largo Plazo
