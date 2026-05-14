@@ -14,34 +14,38 @@
   <title>Notas de Venta</title>
   <link rel="stylesheet" href="css/style.css">
   <script>
-    window.I18n = window.I18n || {
-      translations: {},
-      currentLang: 'es',
-      fallbackLang: 'es',
-      load: async function(lang) {
-        this.currentLang = lang;
-        try {
-          var res = await fetch('/locales/' + lang + '.json');
-          if (!res.ok) throw new Error();
-          this.translations = await res.json();
-        } catch(e) {
-          if (lang !== this.fallbackLang) return this.load(this.fallbackLang);
-          this.translations = {};
-        }
+  // I18n — definición inline, no depende de ningún archivo externo
+  if (!window.I18n || typeof window.I18n.load !== 'function') {
+    window.I18n = {
+      _lang: 'es',
+      _fallback: 'es',
+      _tr: {},
+      load: function(lang) {
+        var self = this;
+        self._lang = lang;
+        return fetch('/locales/' + lang + '.json').then(function(r) {
+          if (!r.ok) throw new Error();
+          return r.json();
+        }).then(function(data) {
+          self._tr = data;
+        }).catch(function() {
+          if (lang !== self._fallback) return self.load(self._fallback);
+          self._tr = {};
+        });
       },
-      t: function(key, params) {
-        var keys = key.split('.');
-        var val = this.translations;
-        for (var i = 0; i < keys.length; i++) {
-          if (val && typeof val === 'object' && keys[i] in val) { val = val[keys[i]]; }
+      t: function(key, p) {
+        var k = key.split('.'), v = this._tr;
+        for (var i = 0; i < k.length; i++) {
+          if (v && typeof v === 'object' && k[i] in v) { v = v[k[i]]; }
           else { return key; }
         }
-        if (typeof val === 'string' && params) {
-          return val.replace(/\{\{(\w+)\}\}/g, function(_, p1) { return params[p1] !== undefined ? params[p1] : _; });
+        if (typeof v === 'string' && p) {
+          return v.replace(/\{\{(\w+)\}\}/g, function(_, p1) { return p[p1] !== undefined ? p[p1] : _; });
         }
-        return typeof val === 'string' ? val : key;
+        return typeof v === 'string' ? v : key;
       }
     };
+  }
   </script>
 </head>
 <body>
@@ -118,7 +122,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.3/jspdf.plugin.autotable.min.js"></script>
   <script src="js/api.js"></script>
   <script src="js/router.js"></script>
-  <script src="js/i18n.js"></script>
+  <!-- i18n inline en <head> -- no necesita archivo externo -->
   <script src="js/pages/login.js"></script>
   <script src="js/pages/register.js"></script>
   <script src="js/pages/home.js"></script>

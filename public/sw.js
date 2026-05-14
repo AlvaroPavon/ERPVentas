@@ -6,7 +6,6 @@ const STATIC_FILES = [
   '/css/style.css',
   '/js/api.js',
   '/js/router.js',
-  '/js/i18n.js',
   '/js/app.js',
   '/js/pages/login.js',
   '/js/pages/register.js',
