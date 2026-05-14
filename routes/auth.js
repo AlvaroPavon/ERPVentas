@@ -83,7 +83,7 @@ router.get('/me', (req, res) => {
     const { JWT_SECRET } = require('../middleware/auth');
     const decoded = jwt.verify(header.split(' ')[1], JWT_SECRET);
     const db = getDb();
-    const user = db.prepare('SELECT id, name, email, avatar, created_at FROM users WHERE id = ?').get(decoded.id);
+    const user = db.prepare('SELECT id, name, email, avatar, language, created_at FROM users WHERE id = ?').get(decoded.id);
     if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
     res.json(user);
   } catch {

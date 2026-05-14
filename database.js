@@ -32,6 +32,7 @@ function initSchema() {
       email TEXT UNIQUE NOT NULL,
       password TEXT NOT NULL,
       avatar TEXT DEFAULT NULL,
+      language TEXT DEFAULT 'es',
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
 
@@ -190,6 +191,8 @@ function initSchema() {
     CREATE INDEX IF NOT EXISTS idx_friend_requests_receiver ON friend_requests(receiver_id);
   `);
 
+  // Migrate: add language column to users
+  try { db.exec('ALTER TABLE users ADD COLUMN language TEXT DEFAULT \'es\''); } catch (e) {}
   // Migrate: add image_url column if missing
   try { db.exec('ALTER TABLE sales ADD COLUMN image_url TEXT DEFAULT NULL'); } catch (e) {}
   // Migrate: add prices JSON column to products
