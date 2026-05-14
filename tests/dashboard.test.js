@@ -144,4 +144,131 @@ describe('📊 Dashboard', () => {
       expect(res.status).toBe(403);
     });
   });
+
+  // ── Phase 3 tests ──────────────────────────────────────────────
+
+  describe('3.1 Language persistence across sessions (integration)', () => {
+    it('debería persistir el idioma después de actualizarlo', async () => {
+      const app = require('../server');
+
+      // Change language to English
+      const putRes = await request(app)
+        .put('/api/user/language')
+        .set(authHeaders(authUser))
+        .send({ language: 'en' });
+      expect(putRes.status).toBe(200);
+      expect(putRes.body.language).toBe('en');
+
+      // Verify via GET endpoint
+      const getRes = await request(app)
+        .get('/api/user/language')
+        .set(authHeaders(authUser));
+      expect(getRes.status).toBe(200);
+      expect(getRes.body.language).toBe('en');
+
+      // Verify via /api/auth/me
+      const meRes = await request(app)
+        .get('/api/auth/me')
+        .set(authHeaders(authUser));
+      expect(meRes.status).toBe(200);
+      expect(meRes.body.language).toBe('en');
+    });
+  });
+
+  describe('3.2 403 Forbidden on unauthorized companyId', () => {
+    it('debería devolver 403 al acceder con companyId no autorizado', async () => {
+      const app = require('../server');
+      const outsider = createTestUser({ email: 'outsider403@test.com' });
+
+      const res = await request(app)
+        .get(`/api/dashboard/monthly?year=2026&month=5&companyId=${company.id}`)
+        .set(authHeaders(outsider));
+
+      expect(res.status).toBe(403);
+    });
+
+    it('debería devolver 200 al acceder con companyId autorizado (owner)', async () => {
+      const app = require('../server');
+
+      const res = await request(app)
+        .get(`/api/dashboard/monthly?year=2026&month=5&companyId=${company.id}`)
+        .set(authHeaders(authUser));
+
+      expect(res.status).toBe(200);
+    });
+  });
+
+  describe('3.4 PoP growth calculation', () => {
+    it('debería calcular crecimiento positivo correctamente', async () => {
+      const app = require('../server');
+
+      // Previous month: $1000 in sales
+      const prevSession = createTestSession(company.id, { session_date: '2026-04-15' });
+      await request(app)
+        .post(`/api/sales/session/${prevSession.id}/items`)
+        .set(authHeaders(authUser))
+        .send({ product_name: 'Producto A', price: 10, quantity: 100 });
+
+      // Current month: $1200 in sales
+      const currSession = createTestSession(company.id, { session_date: '2026-05-15' });
+      await request(app)
+        .post(`/api/sales/session/${currSession.id}/items`)
+        .set(authHeaders(authUser))
+        .send({ product_name: 'Producto B', price: 12, quantity: 100 });
+
+      const res = await request(app)
+        .get('/api/dashboard/monthly?year=2026&month=5')
+        .set(authHeaders(authUser));
+
+      expect(res.status).toBe(200);
+      expect(res.body.stats.growth).toBeCloseTo(20, 0); // +20% growth
+      expect(res.body.stats.trend).toBe('up');
+    });
+
+    it('debería calcular crecimiento negativo correctamente', async () => {
+      const app = require('../server');
+
+      // Previous month: $1000
+      const prevSession = createTestSession(company.id, { session_date: '2026-04-15' });
+      await request(app)
+        .post(`/api/sales/session/${prevSession.id}/items`)
+        .set(authHeaders(authUser))
+        .send({ product_name: 'Producto A', price: 10, quantity: 100 });
+
+      // Current month: $800
+      const currSession = createTestSession(company.id, { session_date: '2026-05-15' });
+      await request(app)
+        .post(`/api/sales/session/${currSession.id}/items`)
+        .set(authHeaders(authUser))
+        .send({ product_name: 'Producto B', price: 8, quantity: 100 });
+
+      const res = await request(app)
+        .get('/api/dashboard/monthly?year=2026&month=5')
+        .set(authHeaders(authUser));
+
+      expect(res.status).toBe(200);
+      expect(res.body.stats.growth).toBeCloseTo(-20, 0); // -20% growth
+      expect(res.body.stats.trend).toBe('down');
+    });
+
+    it('debería devolver growth=null cuando no hay datos del periodo anterior (nuevo)', async () => {
+      const app = require('../server');
+
+      // Only current month, no previous month data
+      const currSession = createTestSession(company.id, { session_date: '2026-05-15' });
+      await request(app)
+        .post(`/api/sales/session/${currSession.id}/items`)
+        .set(authHeaders(authUser))
+        .send({ product_name: 'Producto', price: 10, quantity: 50 });
+
+      const res = await request(app)
+        .get('/api/dashboard/monthly?year=2026&month=5')
+        .set(authHeaders(authUser));
+
+      expect(res.status).toBe(200);
+      // No previous period → growth is null (not 0)
+      expect(res.body.stats.growth).toBeNull();
+      expect(res.body.stats.trend).toBe('neutral');
+    });
+  });
 });
