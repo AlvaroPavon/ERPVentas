@@ -40,6 +40,34 @@ app.use('/api/companies/:companyId/categories', authMiddleware, require('./route
 app.use('/api/companies/:companyId/products', authMiddleware, require('./routes/products'));
 app.use('/api/friends', authMiddleware, require('./routes/friends'));
 
+// Language preference (user settings)
+app.get('/api/user/language', authMiddleware, (req, res) => {
+  try {
+    const db = getDb();
+    const user = db.prepare('SELECT language FROM users WHERE id = ?').get(req.user.id);
+    res.json({ language: user?.language || 'es' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Error al obtener idioma' });
+  }
+});
+
+app.put('/api/user/language', authMiddleware, (req, res) => {
+  try {
+    const { language } = req.body;
+    const valid = ['es', 'en', 'ca', 'eu', 'gl'];
+    if (!valid.includes(language)) {
+      return res.status(400).json({ error: 'Idioma no soportado' });
+    }
+    const db = getDb();
+    db.prepare('UPDATE users SET language = ? WHERE id = ?').run(language, req.user.id);
+    res.json({ language });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Error al actualizar idioma' });
+  }
+});
+
 // Standalone product delete
 app.delete('/api/products/:productId', authMiddleware, (req, res) => {
   try {

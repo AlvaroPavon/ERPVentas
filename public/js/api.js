@@ -178,4 +178,6 @@ const API = {
   updateProfile(name, email) { return this.put('/api/users/profile', { name, email }); },
   changePassword(currentPassword, newPassword) { return this.put('/api/users/password', { currentPassword, newPassword }); },
   updateAvatar(avatar) { return this.put('/api/users/avatar', { avatar }); },
+  getUserLanguage() { return this.get('/api/user/language'); },
+  updateLanguage(lang) { return this.put('/api/user/language', { language: lang }); },
 };
