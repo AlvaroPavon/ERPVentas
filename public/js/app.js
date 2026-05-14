@@ -4,68 +4,147 @@ const App = {
   user: null,
   initialized: false,
   darkMode: false,
-  autoDarkMode: false,
+  themeMode: 'auto', // 'light' | 'dark' | 'auto'
+  accentColor: 'blue',
   autoDarkInterval: null,
+  accentListeners: [],
+
+  // ===== Theme System =====
+
+  get ACCENTS() {
+    return [
+      { id: 'blue', name: 'Azul', color: '#0381fe' },
+      { id: 'green', name: 'Verde', color: '#10b981' },
+      { id: 'purple', name: 'Morado', color: '#8b5cf6' },
+      { id: 'orange', name: 'Naranja', color: '#f97316' },
+      { id: 'pink', name: 'Rosa', color: '#ec4899' },
+      { id: 'teal', name: 'Teal', color: '#14b8a6' },
+      { id: 'red', name: 'Rojo', color: '#ef4444' },
+      { id: 'indigo', name: 'Índigo', color: '#6366f1' },
+    ];
+  },
+
+  get PRIMARY_HEX() {
+    const accent = this.ACCENTS.find(a => a.id === this.accentColor);
+    return accent ? accent.color : '#0381fe';
+  },
 
   isDarkTime() {
     const hour = new Date().getHours();
     return hour < 7 || hour >= 20;
   },
 
-  initDarkMode() {
-    this.autoDarkMode = localStorage.getItem('autoDarkMode') === 'true';
-    const saved = localStorage.getItem('darkMode');
+  initTheme() {
+    // Load saved preferences
+    this.themeMode = localStorage.getItem('themeMode') || 'auto';
+    this.accentColor = localStorage.getItem('accentColor') || 'blue';
 
-    if (this.autoDarkMode) {
-      this.darkMode = this.isDarkTime();
-    } else {
-      this.darkMode = saved !== null ? saved === 'true' : window.matchMedia('(prefers-color-scheme: dark)').matches;
-    }
-    this.applyDarkMode();
+    // Resolve actual dark mode
+    this.resolveDarkMode();
+    this.applyTheme();
     this.startAutoDarkCheck();
 
-    document.getElementById('dark-toggle')?.addEventListener('click', () => {
-      if (this.autoDarkMode) {
-        this.autoDarkMode = false;
-        localStorage.setItem('autoDarkMode', 'false');
+    // Listen for system dark mode changes
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+      if (this.themeMode === 'auto') {
+        this.resolveDarkMode();
+        this.applyTheme();
       }
-      this.darkMode = !this.darkMode;
-      localStorage.setItem('darkMode', this.darkMode);
-      this.applyDarkMode();
     });
+
+    // Dark toggle button in header
+    document.getElementById('dark-toggle')?.addEventListener('click', () => {
+      if (this.themeMode === 'auto') {
+        this.themeMode = 'dark';
+      } else if (this.themeMode === 'dark') {
+        this.themeMode = 'light';
+      } else {
+        this.themeMode = 'auto';
+      }
+      localStorage.setItem('themeMode', this.themeMode);
+      this.resolveDarkMode();
+      this.applyTheme();
+      this.notifyAccentListeners();
+    });
+  },
+
+  resolveDarkMode() {
+    if (this.themeMode === 'dark') {
+      this.darkMode = true;
+    } else if (this.themeMode === 'light') {
+      this.darkMode = false;
+    } else {
+      // auto: follow system
+      this.darkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    }
+  },
+
+  applyTheme() {
+    const html = document.documentElement;
+    const metaTheme = document.querySelector('meta[name="theme-color"]');
+    const toggle = document.getElementById('dark-toggle');
+
+    // Dark mode
+    if (this.darkMode) {
+      html.setAttribute('data-theme', 'dark');
+      if (toggle) toggle.textContent = '☀️';
+    } else {
+      html.removeAttribute('data-theme');
+      if (toggle) toggle.textContent = '🌙';
+    }
+
+    // Accent color
+    html.setAttribute('data-accent', this.accentColor);
+
+    // Update theme-color meta
+    if (metaTheme) {
+      metaTheme.setAttribute('content', this.darkMode ? '#0a0a0f' : this.PRIMARY_HEX);
+    }
+  },
+
+  setAccent(id) {
+    if (!this.ACCENTS.find(a => a.id === id)) return;
+    this.accentColor = id;
+    localStorage.setItem('accentColor', id);
+    this.applyTheme();
+    this.notifyAccentListeners();
+  },
+
+  setThemeMode(mode) {
+    if (!['light', 'dark', 'auto'].includes(mode)) return;
+    this.themeMode = mode;
+    localStorage.setItem('themeMode', mode);
+    this.resolveDarkMode();
+    this.applyTheme();
+    this.notifyAccentListeners();
+  },
+
+  onAccentChange(fn) {
+    this.accentListeners.push(fn);
+  },
+
+  notifyAccentListeners() {
+    this.accentListeners.forEach(fn => fn(this.accentColor, this.themeMode, this.darkMode));
   },
 
   startAutoDarkCheck() {
     if (this.autoDarkInterval) clearInterval(this.autoDarkInterval);
     this.autoDarkInterval = setInterval(() => {
-      if (this.autoDarkMode) {
-        const shouldBeDark = this.isDarkTime();
+      if (this.themeMode === 'auto') {
+        const shouldBeDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        // Also check time-based fallback for the old auto-dark behavior
         if (shouldBeDark !== this.darkMode) {
           this.darkMode = shouldBeDark;
-          this.applyDarkMode();
+          this.applyTheme();
         }
       }
     }, 60000);
   },
 
-  applyDarkMode() {
-    const html = document.documentElement;
-    const toggle = document.getElementById('dark-toggle');
-    if (this.darkMode) {
-      html.setAttribute('data-theme', 'dark');
-      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '#0a0a0f');
-      if (toggle) toggle.textContent = '☀️';
-    } else {
-      html.removeAttribute('data-theme');
-      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '#0381fe');
-      if (toggle) toggle.textContent = '🌙';
-    }
-  },
-
   async init() {
     API.init();
     Router.init();
-    this.initDarkMode();
+    this.initTheme();
 
     // Register routes
     Router.register('login', (el) => renderLogin(el));

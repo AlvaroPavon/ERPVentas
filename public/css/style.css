@@ -98,6 +98,27 @@
   --splash-bg: linear-gradient(135deg, #0a0a0f 0%, #181820 100%);
 }
 
+/* ===== Accent Color Palettes ===== */
+[data-accent="blue"] { --primary: #0381fe; --primary-light: #4da3ff; --primary-dark: #0072de; --primary-bg: rgba(3, 129, 254, 0.1); --primary-gradient: linear-gradient(135deg, #0381fe, #0066cc); }
+[data-accent="green"] { --primary: #10b981; --primary-light: #34d399; --primary-dark: #059669; --primary-bg: rgba(16, 185, 129, 0.1); --primary-gradient: linear-gradient(135deg, #10b981, #059669); }
+[data-accent="purple"] { --primary: #8b5cf6; --primary-light: #a78bfa; --primary-dark: #7c3aed; --primary-bg: rgba(139, 92, 246, 0.1); --primary-gradient: linear-gradient(135deg, #8b5cf6, #7c3aed); }
+[data-accent="orange"] { --primary: #f97316; --primary-light: #fb923c; --primary-dark: #ea580c; --primary-bg: rgba(249, 115, 22, 0.1); --primary-gradient: linear-gradient(135deg, #f97316, #ea580c); }
+[data-accent="pink"] { --primary: #ec4899; --primary-light: #f472b6; --primary-dark: #db2777; --primary-bg: rgba(236, 72, 153, 0.1); --primary-gradient: linear-gradient(135deg, #ec4899, #db2777); }
+[data-accent="teal"] { --primary: #14b8a6; --primary-light: #2dd4bf; --primary-dark: #0d9488; --primary-bg: rgba(20, 184, 166, 0.1); --primary-gradient: linear-gradient(135deg, #14b8a6, #0d9488); }
+[data-accent="red"] { --primary: #ef4444; --primary-light: #f87171; --primary-dark: #dc2626; --primary-bg: rgba(239, 68, 68, 0.1); --primary-gradient: linear-gradient(135deg, #ef4444, #dc2626); }
+[data-accent="indigo"] { --primary: #6366f1; --primary-light: #818cf8; --primary-dark: #4f46e5; --primary-bg: rgba(99, 102, 241, 0.1); --primary-gradient: linear-gradient(135deg, #6366f1, #4f46e5); }
+
+/* Dark mode accent overrides */
+[data-theme="dark"][data-accent="blue"],
+[data-accent="blue"] [data-theme="dark"] { --primary-dark: #3e91ff; }
+[data-theme="dark"][data-accent="green"] { --primary-dark: #34d399; --primary-bg: rgba(16, 185, 129, 0.2); }
+[data-theme="dark"][data-accent="purple"] { --primary-dark: #a78bfa; --primary-bg: rgba(139, 92, 246, 0.2); }
+[data-theme="dark"][data-accent="orange"] { --primary-dark: #fb923c; --primary-bg: rgba(249, 115, 22, 0.2); }
+[data-theme="dark"][data-accent="pink"] { --primary-dark: #f472b6; --primary-bg: rgba(236, 72, 153, 0.2); }
+[data-theme="dark"][data-accent="teal"] { --primary-dark: #2dd4bf; --primary-bg: rgba(20, 184, 166, 0.2); }
+[data-theme="dark"][data-accent="red"] { --primary-dark: #f87171; --primary-bg: rgba(239, 68, 68, 0.2); }
+[data-theme="dark"][data-accent="indigo"] { --primary-dark: #818cf8; --primary-bg: rgba(99, 102, 241, 0.2); }
+
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
 html, body {

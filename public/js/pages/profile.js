@@ -40,14 +40,27 @@ async function renderProfile(el) {
       <button type="submit" class="btn btn-outline btn-block">Cambiar Contraseña</button>
     </form>
 
-    <div class="section-title" style="margin-top:20px;">Apariencia</div>
-    <div class="list-item" id="btn-toggle-auto-dark" style="cursor:pointer;">
-      <div class="item-icon">🌓</div>
-      <div class="item-content">
-        <div class="item-title">Modo oscuro automático</div>
-        <div class="item-subtitle" id="auto-dark-status">De 20:00 a 07:00</div>
-      </div>
-      <div class="item-right"><span id="auto-dark-icon" style="font-size:18px;">${App.autoDarkMode ? '✅' : '☐'}</span></div>
+    <div class="section-title" style="margin-top:20px;">Tema</div>
+
+    <!-- Theme mode selector -->
+    <div class="chip-group theme-mode-selector" style="display:flex;gap:6px;margin-bottom:12px;">
+      <span class="chip ${App.themeMode === 'light' ? 'active' : ''}" data-theme-mode="light" style="flex:1;text-align:center;">☀️ Claro</span>
+      <span class="chip ${App.themeMode === 'dark' ? 'active' : ''}" data-theme-mode="dark" style="flex:1;text-align:center;">🌙 Oscuro</span>
+      <span class="chip ${App.themeMode === 'auto' ? 'active' : ''}" data-theme-mode="auto" style="flex:1;text-align:center;">🌓 Auto</span>
+    </div>
+
+    <!-- Accent color selector -->
+    <div class="accent-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:4px;">
+      ${App.ACCENTS.map(a => `
+        <div class="accent-option ${App.accentColor === a.id ? 'active' : ''}" data-accent-id="${a.id}" style="
+          display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px;
+          border-radius:var(--radius-sm);cursor:pointer;border:2px solid transparent;
+          ${App.accentColor === a.id ? 'border-color:' + a.color : 'border-color:var(--border)'};
+        ">
+          <div style="width:28px;height:28px;border-radius:50%;background:${a.color};"></div>
+          <span style="font-size:11px;color:var(--text-secondary);">${a.name}</span>
+        </div>
+      `).join('')}
     </div>
 
     <div class="section-title" style="margin-top:20px;">Notificaciones</div>
@@ -197,17 +210,43 @@ async function renderProfile(el) {
     }
   });
 
-  document.getElementById('btn-toggle-auto-dark')?.addEventListener('click', () => {
-    App.autoDarkMode = !App.autoDarkMode;
-    localStorage.setItem('autoDarkMode', App.autoDarkMode);
-    if (App.autoDarkMode) {
-      App.darkMode = App.isDarkTime();
-      localStorage.removeItem('darkMode');
-    }
-    App.applyDarkMode();
-    App.startAutoDarkCheck();
-    document.getElementById('auto-dark-icon').textContent = App.autoDarkMode ? '✅' : '☐';
-    App.showToast(App.autoDarkMode ? 'Auto programado' : 'Manual', 'success');
+  // Theme mode selector
+  document.querySelectorAll('[data-theme-mode]').forEach(el => {
+    el.addEventListener('click', () => {
+      const mode = el.dataset.themeMode;
+      App.setThemeMode(mode);
+      document.querySelectorAll('[data-theme-mode]').forEach(c => c.classList.remove('active'));
+      el.classList.add('active');
+      App.showToast(mode === 'auto' ? 'Tema automático (sigue al dispositivo)' : `Tema ${mode === 'light' ? 'claro' : 'oscuro'}`, 'success');
+    });
+  });
+
+  // Accent color selector
+  document.querySelectorAll('[data-accent-id]').forEach(el => {
+    el.addEventListener('click', () => {
+      const id = el.dataset.accentId;
+      App.setAccent(id);
+      document.querySelectorAll('[data-accent-id]').forEach(a => {
+        a.style.borderColor = 'var(--border)';
+        a.classList.remove('active');
+      });
+      el.style.borderColor = App.ACCENTS.find(a => a.id === id)?.color || '#0381fe';
+      el.classList.add('active');
+      App.showToast('Color de acento cambiado', 'success');
+    });
+  });
+
+  // Listen for theme changes from outside (e.g. header toggle)
+  App.onAccentChange(() => {
+    document.querySelectorAll('[data-theme-mode]').forEach(el => {
+      el.classList.toggle('active', el.dataset.themeMode === App.themeMode);
+    });
+    document.querySelectorAll('[data-accent-id]').forEach(el => {
+      const id = el.dataset.accentId;
+      const isActive = id === App.accentColor;
+      el.style.borderColor = isActive ? (App.ACCENTS.find(a => a.id === id)?.color || '#0381fe') : 'var(--border)';
+      el.classList.toggle('active', isActive);
+    });
   });
 
   document.getElementById('btn-view-activity')?.addEventListener('click', () => {
