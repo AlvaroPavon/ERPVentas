@@ -3,7 +3,9 @@
     "title": "Inicio",
     "customize": "Personalizar",
     "monthSelector": "{{month}} {{year}}",
-    "noWidgets": "Todos os widgets están ocultos. Fai clic en ⚙️ Personalizar para mostralos."
+    "noWidgets": "Todos os widgets están ocultos. Fai clic en ⚙️ Personalizar para mostralos.",
+    "companySelector": "Empresa:",
+    "allCompanies": "Todas as empresas"
   },
   "stats": {
     "totalSales": "Vendas Totais",
@@ -11,7 +13,9 @@
     "sessions": "Sesións",
     "companies": "Empresas",
     "averageTicket": "Ticket Promedio",
-    "thisWeek": "Esta semana ({{diff}}% vs anterior)"
+    "thisWeek": "Esta semana ({{diff}}% vs anterior)",
+    "growth": "{{pct}}% vs período anterior",
+    "newPeriod": "Novo"
   },
   "chart": {
     "monthlySales": "Vendas do Mes",

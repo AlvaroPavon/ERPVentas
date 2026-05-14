@@ -282,6 +282,17 @@ html, body {
 .stat-card.primary { background: var(--primary-gradient); color: white; border-color: transparent; }
 .stat-card.primary .stat-value { color: white; }
 .stat-card.primary .stat-label { color: rgba(255,255,255,0.8); }
+.stat-card.primary .stat-growth { color: rgba(255,255,255,0.9); }
+
+/* PoP Growth Indicators */
+.stat-growth { font-size: 12px; font-weight: 700; margin-top: 4px; display: flex; align-items: center; justify-content: center; gap: 3px; }
+.stat-growth.up { color: #10b981; }
+.stat-growth.down { color: #ef4444; }
+.stat-growth.neutral { color: var(--text-secondary); }
+.stat-growth.new { color: var(--text-secondary); font-weight: 400; }
+
+/* Company Selector */
+.company-selector { display: inline-block; margin-left: 8px; }
 
 /* Chips (month selector) */
 .chip-group {

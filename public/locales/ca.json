@@ -3,7 +3,9 @@
     "title": "Inici",
     "customize": "Personalitzar",
     "monthSelector": "{{month}} {{year}}",
-    "noWidgets": "Tots els widgets estan amagats. Fes clic a ⚙️ Personalitzar per mostrar-los."
+    "noWidgets": "Tots els widgets estan amagats. Fes clic a ⚙️ Personalitzar per mostrar-los.",
+    "companySelector": "Empresa:",
+    "allCompanies": "Totes les empreses"
   },
   "stats": {
     "totalSales": "Vendes Totals",
@@ -11,7 +13,9 @@
     "sessions": "Sessions",
     "companies": "Empreses",
     "averageTicket": "Ticket Promig",
-    "thisWeek": "Aquesta setmana ({{diff}}% vs anterior)"
+    "thisWeek": "Aquesta setmana ({{diff}}% vs anterior)",
+    "growth": "{{pct}}% vs període anterior",
+    "newPeriod": "Nou"
   },
   "chart": {
     "monthlySales": "Vendes del Mes",

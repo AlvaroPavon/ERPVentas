@@ -67,11 +67,31 @@ const API = {
   updateSession(id, data) { return this.put(`/api/sales/session/${id}`, data); },
 
   // Dashboard
-  getMonthly(year, month) { return this.get(`/api/dashboard/monthly?year=${year}&month=${month}`); },
-  getTopProducts(limit) { return this.get(`/api/dashboard/top-products?limit=${limit || 10}`); },
-  getDailyComparison(limit) { return this.get(`/api/dashboard/daily-comparison?limit=${limit || 20}`); },
-  getOverview() { return this.get('/api/dashboard/overview'); },
-  getAdvancedStats() { return this.get('/api/dashboard/advanced'); },
+  getMonthly(year, month, companyId) {
+    let url = `/api/dashboard/monthly?year=${year}&month=${month}`;
+    if (companyId) url += `&companyId=${companyId}`;
+    return this.get(url);
+  },
+  getTopProducts(limit, companyId) {
+    let url = `/api/dashboard/top-products?limit=${limit || 10}`;
+    if (companyId) url += `&companyId=${companyId}`;
+    return this.get(url);
+  },
+  getDailyComparison(limit, companyId) {
+    let url = `/api/dashboard/daily-comparison?limit=${limit || 20}`;
+    if (companyId) url += `&companyId=${companyId}`;
+    return this.get(url);
+  },
+  getOverview(companyId) {
+    let url = '/api/dashboard/overview';
+    if (companyId) url += `?companyId=${companyId}`;
+    return this.get(url);
+  },
+  getAdvancedStats(companyId) {
+    let url = '/api/dashboard/advanced';
+    if (companyId) url += `?companyId=${companyId}`;
+    return this.get(url);
+  },
 
   // Activity
   getActivity(page = 1) { return this.get(`/api/activity?page=${page}&limit=50`); },

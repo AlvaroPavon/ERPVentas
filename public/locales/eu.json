@@ -3,7 +3,9 @@
     "title": "Hasiera",
     "customize": "Pertsonalizatu",
     "monthSelector": "{{month}} {{year}}",
-    "noWidgets": "Widget guztiak ezkutatuta daude. Egin klik ⚙️ Pertsonalizatu botoian erakusteko."
+    "noWidgets": "Widget guztiak ezkutatuta daude. Egin klik ⚙️ Pertsonalizatu botoian erakusteko.",
+    "companySelector": "Enpresa:",
+    "allCompanies": "Enpresa guztiak"
   },
   "stats": {
     "totalSales": "Salmenta Guztiak",
@@ -11,7 +13,9 @@
     "sessions": "Saioak",
     "companies": "Enpresak",
     "averageTicket": "Batez besteko Ticketa",
-    "thisWeek": "Aste hau ({{diff}}% vs aurrekoa)"
+    "thisWeek": "Aste hau ({{diff}}% vs aurrekoa)",
+    "growth": "{{pct}}% vs aurreko aldia",
+    "newPeriod": "Berria"
   },
   "chart": {
     "monthlySales": "Hileko Salmentak",

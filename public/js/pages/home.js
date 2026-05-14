@@ -1,4 +1,6 @@
 let homeCharts = {};
+let selectedCompanyId = null;
+let userCompanies = [];
 
 const LANGUAGES = [
   { code: 'es', labelKey: 'language.es' },
@@ -40,6 +42,10 @@ function destroyHomeCharts() {
   homeCharts = {};
 }
 
+function isAdminOrOwner(companies) {
+  return companies.some(c => c.role === 'admin' || c.role === 'owner');
+}
+
 async function renderHome(el) {
   App.updateTitle(I18n.t('dashboard.title'));
 
@@ -47,12 +53,33 @@ async function renderHome(el) {
   const year = now.getFullYear();
   const month = now.getMonth() + 1;
 
+  // Fetch user companies for the company selector
+  userCompanies = [];
+  selectedCompanyId = null;
+  let hasPrivilegedRole = false;
+  try {
+    userCompanies = await API.getCompanies();
+    hasPrivilegedRole = isAdminOrOwner(userCompanies);
+  } catch (err) {
+    console.error('Failed to fetch companies:', err);
+  }
+
+  const companySelectorHtml = hasPrivilegedRole && userCompanies.length > 0 ? `
+    <div class="company-selector">
+      <select id="company-select" class="company-select" style="font-size:12px;padding:4px 8px;border-radius:6px;border:1px solid var(--border-color);background:var(--card-bg);color:var(--text-color);">
+        <option value="">${I18n.t('dashboard.allCompanies')}</option>
+        ${userCompanies.map(c => `<option value="${c.id}" ${selectedCompanyId === c.id ? 'selected' : ''}>${c.name}</option>`).join('')}
+      </select>
+    </div>
+  ` : '';
+
   el.innerHTML = `
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;" class="dashboard-toolbar">
       <div class="lang-selector">
         <select id="lang-select" class="lang-select" style="font-size:12px;padding:4px 8px;border-radius:6px;border:1px solid var(--border-color);background:var(--card-bg);color:var(--text-color);">
           ${LANGUAGES.map(l => `<option value="${l.code}" ${l.code === I18n.currentLang ? 'selected' : ''}>${I18n.t(l.labelKey)}</option>`).join('')}
         </select>
+        ${companySelectorHtml}
       </div>
       <button class="btn btn-ghost btn-sm" id="btn-customize-dashboard" style="font-size:12px;">⚙️ ${I18n.t('dashboard.customize')}</button>
     </div>
@@ -114,7 +141,7 @@ async function renderHome(el) {
     el.innerHTML += `<div class="list-empty" style="margin-top:16px;"><div class="empty-icon">👁️</div><p>${I18n.t('dashboard.noWidgets')}</p></div>`;
   }
 
-  loadHomeData(year, month);
+  loadHomeData(year, month, selectedCompanyId);
 
   document.getElementById('month-selector')?.addEventListener('click', (e) => {
     const chip = e.target.closest('.chip');
@@ -123,7 +150,7 @@ async function renderHome(el) {
     chip.classList.add('active');
     const [y, m] = chip.dataset.month.split('-');
     destroyHomeCharts();
-    loadHomeData(parseInt(y), parseInt(m));
+    loadHomeData(parseInt(y), parseInt(m), selectedCompanyId);
   });
 
   document.getElementById('btn-customize-dashboard')?.addEventListener('click', showCustomizeModal);
@@ -140,6 +167,13 @@ async function renderHome(el) {
     const pageContent = document.getElementById(Router.containerId);
     destroyHomeCharts();
     renderHome(pageContent);
+  });
+
+  // Company selector change handler
+  document.getElementById('company-select')?.addEventListener('change', (e) => {
+    selectedCompanyId = e.target.value || null;
+    destroyHomeCharts();
+    loadHomeData(year, month, selectedCompanyId);
   });
 }
 
@@ -210,17 +244,17 @@ function generateMonthChips(year, currentMonth) {
   return html;
 }
 
-async function loadHomeData(year, month) {
+async function loadHomeData(year, month, companyId) {
   try {
     const [overview, monthly, top, daily, advanced] = await Promise.all([
-      API.getOverview(),
-      API.getMonthly(year, month),
-      API.getTopProducts(5),
-      API.getDailyComparison(20),
-      API.getAdvancedStats()
+      API.getOverview(companyId),
+      API.getMonthly(year, month, companyId),
+      API.getTopProducts(5, companyId),
+      API.getDailyComparison(20, companyId),
+      API.getAdvancedStats(companyId)
     ]);
 
-    if (isWidgetEnabled('stats')) renderHomeStats(overview);
+    if (isWidgetEnabled('stats')) renderHomeStats(overview, monthly);
     if (isWidgetEnabled('monthly')) renderMonthlyChart(monthly);
     if (isWidgetEnabled('topProducts')) renderTopProductsChart(top);
     if (isWidgetEnabled('dailyComparison')) renderDailyChart(daily);
@@ -317,12 +351,30 @@ function renderAdvancedStats(data) {
   }
 }
 
-function renderHomeStats(overview) {
+function renderHomeStats(overview, monthly) {
+  // Build growth indicator HTML
+  let growthHtml = '';
+  const growth = monthly?.stats?.growth;
+  const trend = monthly?.stats?.trend;
+
+  if (growth === null || growth === undefined) {
+    // NULL growth means new period or no previous data
+    growthHtml = `<div class="stat-growth new">🆕 ${I18n.t('stats.newPeriod')}</div>`;
+  } else if (growth > 0) {
+    growthHtml = `<div class="stat-growth up">↑ ${growth}%</div>`;
+  } else if (growth < 0) {
+    growthHtml = `<div class="stat-growth down">↓ ${Math.abs(growth)}%</div>`;
+  } else {
+    // growth === 0 — no change
+    growthHtml = `<div class="stat-growth neutral">→ 0%</div>`;
+  }
+
   document.getElementById('home-stats').innerHTML = `
     <div class="stat-card primary">
       <div class="stat-icon">💰</div>
       <div class="stat-value">${overview.totalSales.toFixed(2)}€</div>
       <div class="stat-label">${I18n.t('stats.totalSales')}</div>
+      ${growthHtml}
     </div>
     <div class="stat-card success">
       <div class="stat-icon">📦</div>

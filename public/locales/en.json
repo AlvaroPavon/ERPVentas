@@ -3,7 +3,9 @@
     "title": "Home",
     "customize": "Customize",
     "monthSelector": "{{month}} {{year}}",
-    "noWidgets": "All widgets are hidden. Click ⚙️ Customize to show them."
+    "noWidgets": "All widgets are hidden. Click ⚙️ Customize to show them.",
+    "companySelector": "Company:",
+    "allCompanies": "All companies"
   },
   "stats": {
     "totalSales": "Total Sales",
@@ -11,7 +13,9 @@
     "sessions": "Sessions",
     "companies": "Companies",
     "averageTicket": "Average Ticket",
-    "thisWeek": "This week ({{diff}}% vs previous)"
+    "thisWeek": "This week ({{diff}}% vs previous)",
+    "growth": "{{pct}}% vs previous period",
+    "newPeriod": "New"
   },
   "chart": {
     "monthlySales": "Monthly Sales",
